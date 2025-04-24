@@ -20,13 +20,14 @@ import { HomeStackParams, MainStackParams, ScanStackParams, Screens, TabStacks }
 import { DidKey, KeyDidCreateOptions, JwaSignatureAlgorithm, getJwkFromKey,W3cCredentialRecord,SdJwtVcRecord } from '@credo-ts/core'
 import { OpenId4VciCredentialFormatProfile,OpenId4VciResolvedCredentialOffer, } from '@credo-ts/openid4vc'
 import { err } from 'react-native-svg/lib/typescript/xml';
+import { useAppAgent } from '../../hooks/useInitAgent';
 
 type CredentialOffer4VciProps = StackScreenProps<
   HomeStackParams,
   Screens.CredentialOfferOid4VC
 >;
 
-const CredentialOffer: React.FC<CredentialOffer4VciProps> = ({
+const CredentialOfferOid4VC: React.FC<CredentialOffer4VciProps> = ({
   navigation,
   route,
 }) => {
@@ -35,7 +36,7 @@ const CredentialOffer: React.FC<CredentialOffer4VciProps> = ({
     throw new Error(t<string>('CredentialOffer.CredentialOfferParamsError'));
   }
   const { url } = route.params;
-  const { agent } = useAgent();
+  const { agent } = useAppAgent();
   const [buttonsVisible, setButtonsVisible] = useState(true);
   const [pendingModalVisible, setPendingModalVisible] = useState(false);
   const [successModalVisible, setSuccessModalVisible] = useState(false);
@@ -46,71 +47,28 @@ const CredentialOffer: React.FC<CredentialOffer4VciProps> = ({
   useEffect(() => {
     void (async () => {
       try {
+        console.log("DEBUG: Credential Offer was:")
         console.log(url)
         const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(url)
-        setResolvedOffer(resolvedCredentialOffer)
-        console.log("DEBUG: Credential Offer was:")
-        console.log(resolvedCredentialOffer)
+        setResolvedOffer(resolvedCredentialOffer)  
       }
       catch (e:unknown) {
         console.log("Promise Error")
-        console.log(e)
+        console.error(e)
       }
     })()
   },[])
 
-  //console.log("DEBUG: Credential Offer was:")
-  //console.log(resolvedOffer)
-
-  /*if (!credential) {
-    throw new Error(t<string>('CredentialOffer.CredentialFetchError'));
-  }
-
-  const getCredentialData = useCallback(async () => {
-    if (credential) {
-      const credentialRecord = await agent.credentials.getFormatData(
-        credential.id,
-      );
-      setCredentialRecord(credentialRecord);
-    }
-  }, [agent.credentials, credential]);
-
-  useEffect(() => {
-    getCredentialData();
-  }, [getCredentialData]);
-
-  useEffect(() => {
-    if (credential.state === CredentialState.Declined) {
-      setDeclinedModalVisible(true);
-    }
-  }, [credential]);
-
-  useEffect(() => {
-    if (
-      credential.state === CredentialState.CredentialReceived ||
-      credential.state === CredentialState.Done
-    ) {
-      if (pendingModalVisible) {
-        setPendingModalVisible(false);
-      }
-      setSuccessModalVisible(true);
-    }
-    if (credential.state === CredentialState.Done) {
-      saveCredentialInGenericRecords();
-    }
-  }, [credential.state, pendingModalVisible, saveCredentialInGenericRecords]);
-*/
-
   const handleAcceptPress = async () => {
     try {
-      if (resolvedOffer != undefined) {
+      if (resolvedOffer == undefined) {
         throw new Error('Something went wrong')
       }
 
       setButtonsVisible(false);
       setPendingModalVisible(true);
     
-      await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
+      const credentials = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
         // First parameter is now the resolved credential offer
         resolvedOffer,
         {
@@ -176,16 +134,19 @@ const CredentialOffer: React.FC<CredentialOffer4VciProps> = ({
     const records: Array<W3cCredentialRecord | SdJwtVcRecord> = []
     for (const credential of credentials) {
       if ('compact' in credential) {
-        const record = await agent.modules.openId4VcHolder.sdJwtVc.store(credential.compact)
+        const record = await agent.sdJwtVc.store(credential.compact)
         records.push(record)
       } else {
-        const record = await agent.modules.openId4VcHolder.w3cCredentials.storeCredential({
+        const record = await agent.w3cCredentials.storeCredential({
           credential,
         })
         records.push(record)
       }
     }
-
+    console.log('Successfully added')
+    setPendingModalVisible(false)
+    setSuccessModalVisible(true)
+    
     } catch (error: unknown) {
       console.log(error)
       setButtonsVisible(true);
@@ -199,30 +160,9 @@ const CredentialOffer: React.FC<CredentialOffer4VciProps> = ({
   };
 
   const handleDeclinePress = async () => {
-    Alert.alert(
-      t<string>('CredentialOffer.RejectThisCredential'),
-      t<string>('Global.ThisDecisionCannotBeChanged'),
-      [
-        { text: t<string>('Global.Cancel'), style: 'cancel' },
-        {
-          text: t<string>('Global.Confirm'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setButtonsVisible(false);
-              navigation.navigate(Screens.Home)
-            } catch (e: unknown) {
-              Toast.show({
-                type: ToastType.Error,
-                text1: t<string>('CredentialOffer.RejectOfferTitle'),
-                text2: t<string>('CredentialOffer.RejectOfferMessage'),
-              });
-            }
-          },
-        },
-      ],
-    );
+    setDeclinedModalVisible(true);
   };
+
 
   return (
     <>
@@ -267,7 +207,6 @@ const CredentialOffer: React.FC<CredentialOffer4VciProps> = ({
         doneTitle={t<string>('Global.Cancel')}
         visible={pendingModalVisible}
         onDone={() => {
-          setPendingModalVisible(false);
         }}
       >
         <CredentialPending style={{ marginVertical: 20 }} />
@@ -277,10 +216,10 @@ const CredentialOffer: React.FC<CredentialOffer4VciProps> = ({
         visible={successModalVisible}
         onDone={() => {
           setSuccessModalVisible(false);
-          navigation.pop();
+          navigation.pop();   
           navigation.getParent()?.navigate(TabStacks.CredentialStack, {
             screen: Screens.Credentials,
-          });
+          }); 
         }}
       >
         <CredentialSuccess style={{ marginVertical: 20 }} />
@@ -300,7 +239,7 @@ const CredentialOffer: React.FC<CredentialOffer4VciProps> = ({
   );
 };
 
-export default CredentialOffer;
+export default CredentialOfferOid4VC;
 
 const styles = StyleSheet.create({
   headerTextContainer: {

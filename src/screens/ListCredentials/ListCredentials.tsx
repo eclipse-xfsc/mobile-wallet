@@ -2,39 +2,46 @@ import {
   CredentialExchangeRecord,
   CredentialState,
 } from '@credo-ts/core';
-import { useCredentialByState } from '@credo-ts/react-hooks';
+import { useCredentialsForDisplay } from '../../agent/hooks';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, StyleSheet, View } from 'react-native';
-import { Text } from '../../components';
+import { Platform, FlatList, StyleSheet, Text, View } from 'react-native';
 import SearchBar from '../../components/inputs/SearchBar';
 import CredentialListItem from '../../components/listItems/CredentialListItem';
 import { ColorPallet, TextTheme } from '../../theme/theme';
-import { parsedSchema } from '../../utils/helpers';
+import { useAgent, useCredentialById } from '@credo-ts/react-hooks';
+import Accordion from '../../components/accordion/Accordion';
+import CredentialCard from '../../components/misc/CredentialCard';
+import { CredentialStackParams, Screens } from '../../types/navigators';
+import { RecordHistory } from '../../types/record';
+import { credentialDefinition } from '../../utils/helpers';
+import { errorToast, warningToast } from '../../utils/toast';
+import DetailedCredentialCard from '../../components/misc/DetailedCredentialCard';
 
 const ListCredentials: React.FC = () => {
-  const credentials = useCredentialByState(CredentialState.Done);
+  const credentialStorage = useCredentialsForDisplay();
 
   const { t } = useTranslation();
   const [searchPhrase, setSearchPhrase] = useState('');
   const [clicked, setClicked] = useState(false);
-  const [filteredData, setFilteredData] = useState(credentials);
+  const [filteredData, setFilteredData] = useState(credentialStorage.credentials);
 
   const refreshFilteredData = useCallback(() => {
+    console.log(filteredData)
     setFilteredData(filteredData);
   }, [filteredData]);
   // Should not ever set state during rendering, so do this in useEffect instead.
   useEffect(() => {
-    if (filteredData.length < credentials.length) {
+    if (filteredData.length < credentialStorage.credentials.length) {
       refreshFilteredData();
     }
-  }, [filteredData, credentials.length, refreshFilteredData]);
+  }, [filteredData, credentialStorage.credentials.length, refreshFilteredData]);
 
   const search = (text: string) => {
-    const filteredData = credentials.filter((item) => {
-      const orgLabel = parsedSchema(item).name.toUpperCase();
+    const filteredData = credentialStorage.credentials.filter((item) => {
+      const orgLabel = item.display.name;
       const textData = text.toUpperCase();
-      return orgLabel.indexOf(textData) > -1;
+      return orgLabel.includes(textData);
     });
 
     setFilteredData(filteredData);
@@ -47,6 +54,8 @@ const ListCredentials: React.FC = () => {
     </Text>
   );
 
+  console.log(filteredData)
+
   return (
     <View style={styles.container}>
       <SearchBar
@@ -56,26 +65,27 @@ const ListCredentials: React.FC = () => {
         setClicked={setClicked}
       />
       <FlatList
-        style={{ backgroundColor: ColorPallet.grayscale.white }}
         data={filteredData}
-        keyExtractor={(item: CredentialExchangeRecord) => item?.id}
+        renderItem={({ item }) => <CredentialCard 
+            credential={item}
+            issuerImage={item.display.issuer.logo}
+            backgroundImage={item.display.backgroundImage}
+            textColor={item.display.textColor}
+            name={item.display.name}
+            issuerName={item.display.issuer.name}
+            subtitle={item.display.description}
+            bgColor={item.display.backgroundColor}
+         />}
+        keyExtractor={(item) => item.id}
         ListEmptyComponent={emptyListComponent}
-        renderItem={({ item, index }) => (
-          <View
-            style={{
-              marginHorizontal: 15,
-              marginTop: 15,
-              marginBottom: index === filteredData.length - 1 ? 45 : 0,
-            }}
-            key={index.toString()}
-          >
-            <CredentialListItem key={index.toString()} credential={item} />
-          </View>
-        )}
+        horizontal={false}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.list}
       />
     </View>
   );
 };
+
 
 export default ListCredentials;
 
@@ -84,11 +94,84 @@ const styles = StyleSheet.create({
     backgroundColor: ColorPallet.grayscale.white,
     marginVertical: 16,
   },
-  bodyText: {
-    ...TextTheme.normal,
-    flexShrink: 1,
+  card: {
+    backgroundColor: ColorPallet.baseColors.white,
+    borderRadius: 10,
+    elevation: 3,
+    padding: 10,
+    marginVertical: 10,
+    width: '90%',
+    alignSelf: 'center',
   },
-  spacer: {
-    height: 40,
+  cardIos: {
+    backgroundColor: ColorPallet.baseColors.white,
+    shadowColor: ColorPallet.baseColors.black,
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
+    borderRadius: 10,
+    padding: 10,
+    marginVertical: 10,
+    width: '90%',
+    alignSelf: 'center',
+  },
+  text: {
+    fontSize: 18,
+    marginBottom: 20,
+  },
+  safeArea: {
+    flex: 1,
+  },
+  heading: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  hidden: {
+    height: 0,
+  },
+  list: {
+    overflow: 'hidden',
+  },
+  sectionTitle: {
+    ...TextTheme.normal,
+    fontWeight: 'bold',
+    color: ColorPallet.baseColors.black,
+    marginLeft: '5%',
+  },
+  sectionSubTitle: {
+    ...TextTheme.caption,
+    color: ColorPallet.baseColors.black,
+    marginLeft: '5%',
+  },
+  sectionDescription: {
+    ...TextTheme.caption,
+    color: ColorPallet.baseColors.black,
+    height: 30,
+    marginLeft: '5%',
+  },
+  divider: {
+    borderBottomColor: ColorPallet.baseColors.lightGrey,
+    borderBottomWidth: 1,
+    width: '100%',
+  },
+  credentialCardView: {
+    marginHorizontal: 15,
+    marginTop: 16,
+  },
+  innerContainer: {
+    flexDirection: 'row',
+    marginVertical: 5,
+  },
+  attribute: {
+    width: '50%',
+    color: ColorPallet.baseColors.black,
+  },
+  scrollView: {
+    paddingBottom: 30,
   },
 });

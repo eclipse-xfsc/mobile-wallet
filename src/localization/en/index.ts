@@ -126,9 +126,6 @@ const translation = {
     RemoveDataMsg: 'You are going to remove the wallet from your phone. The added connections and credentials will be removed from the app. Are you sure to continue?',
     LoginToken: "OTP Tokens"
   },
-  OTPTokens: {
-    NoTokens: 'No tokens available',
-  },
   ExportWallet:{
     WalletExportedPath: 'Wallet Exported to the path:',
   },

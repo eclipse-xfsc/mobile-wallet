@@ -20,13 +20,6 @@ const CredentialStack: React.FC = () => {
           title: t<string>('ScreenTitles.Credentials'),
         })}
       />
-      <Stack.Screen
-        name={Screens.CredentialDetails}
-        component={CredentialDetails}
-        options={() => ({
-          title: t<string>('ScreenTitles.CredentialDetails'),
-        })}
-      />
     </Stack.Navigator>
   );
 };

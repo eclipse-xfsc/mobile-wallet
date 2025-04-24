@@ -125,9 +125,6 @@ const translation = {
     RemoveDataButton: 'Alle Daten entfernen',
     RemoveDataMsg: 'Sie werden die Brieftasche von Ihrem Telefon entfernen. Die hinzugefügten Verbindungen und Anmeldeinformationen werden aus der App entfernt. Möchten Sie wirklich fortfahren?',
   },
-  OTPTokens: {
-    NoTokens: 'Keine Tokens verfügbar',
-  },
   ExportWallet:{
     WalletExportedPath: 'Das Wallet wurde unter dem folgenden Pfad exportiert:',
   },

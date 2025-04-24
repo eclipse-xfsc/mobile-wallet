@@ -7,8 +7,11 @@ import {
   V1CredentialProtocol,
   V1ProofProtocol,
 } from '@credo-ts/anoncreds';
+import {
+  useAgent
+} from '@credo-ts/react-hooks';
 import { OpenId4VcHolderModule } from '@credo-ts/openid4vc'
-import { DidKey, KeyDidCreateOptions, JwaSignatureAlgorithm, getJwkFromKey } from '@credo-ts/core'
+import { DidKey, KeyDidCreateOptions, JwaSignatureAlgorithm, getJwkFromKey, WebDidResolver, KeyDidResolver, JwkDidRegistrar, JwkDidResolver } from '@credo-ts/core'
 import { OpenId4VciCredentialFormatProfile } from '@credo-ts/openid4vc'
 import { AskarModule } from '@credo-ts/askar';
 import {
@@ -61,30 +64,9 @@ const useInitAgentGuid = async () => {
   }
 };
 
-
-export const useCreateAgent = async ({
-  walletConfig,
-  importConfig,
-}: InitAgentProps) => {
-  const label = await useInitAgentGuid();
-
   const legacyIndyCredentialFormat = new LegacyIndyCredentialFormatService();
   const legacyIndyProofFormat = new LegacyIndyProofFormatService();
-
-  const fullWalletConfig = {
-    ...walletConfig,
-    id: label,
-  };
-
-  const newAgent = new Agent({
-    dependencies: agentDependencies,
-    config: {
-      walletConfig: fullWalletConfig,
-      label,
-      autoUpdateStorageOnStartup: true,
-      logger: new ConsoleLogger(LogLevel.trace),
-    },
-    modules: {
+const modules = {
       askar: new AskarModule({
         ariesAskar,
       }),
@@ -103,7 +85,10 @@ export const useCreateAgent = async ({
         autoAcceptConnections: true,
       }),
       dids: new DidsModule({
-        resolvers: [new IndyVdrIndyDidResolver()],
+        resolvers: [new IndyVdrIndyDidResolver(),
+                    new WebDidResolver(),
+                    new KeyDidResolver(),
+                    new JwkDidResolver()],
       }),
       anoncreds: new AnonCredsModule({
         anoncreds: anoncreds,
@@ -137,7 +122,32 @@ export const useCreateAgent = async ({
         ],
         autoAcceptProofs: AutoAcceptProof.ContentApproved,
       }),
+    } as const
+
+    export type AppAgent = Agent<typeof modules>
+
+export const useCreateAgent = async ({
+  walletConfig,
+  importConfig,
+}: InitAgentProps) => {
+  const label = await useInitAgentGuid();
+
+
+
+  const fullWalletConfig = {
+    ...walletConfig,
+    id: label,
+  };
+
+  const newAgent = new Agent({
+    dependencies: agentDependencies,
+    config: {
+      walletConfig: fullWalletConfig,
+      label,
+      autoUpdateStorageOnStartup: true,
+      logger: new ConsoleLogger(LogLevel.trace),
     },
+    modules ,
   });
 
   if (importConfig) {
@@ -161,3 +171,4 @@ export const useCreateAgent = async ({
 };
 
 export type AgentType = Awaited<ReturnType<typeof useCreateAgent>>;
+export const useAppAgent = () => useAgent<AgentType>();

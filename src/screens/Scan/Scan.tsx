@@ -27,10 +27,9 @@ async function fetchWithRedirect(url: string): Promise<string> {
 }
 
 export async function CheckLinkType(url: string,navigation:StackNavigationProp<ScanStackParams, Screens.Scan>): Promise<string> {
-  console.log("Procees Deep Link")
-  console.log("Link is: "+url)
+  console.log("Procees Deep Link:"+url)
   if (url.startsWith('openid-credential-offer')) {
-    console.log("This is a openid4vc coffering!")
+    console.log("Process openid4vc coffering!")
     navigation.navigate(Screens.CredentialOfferOid4VC,{url});
     return ""
   }
@@ -45,12 +44,11 @@ export async function CheckLinkType(url: string,navigation:StackNavigationProp<S
   }
 
   if (url.startsWith('otpauth://totp/')) {
-    navigation.navigate(TabStacks.SettingsStack, {
-      screen: Screens.OTPGenerator,
-      params: { url },
-    });
+    console.log("Process TOTP!")
+    navigation.navigate(Screens.OTPGenerator, { url });
     return "";
   } else {
+    console.log("Process URL!")
     return url
   }
 }

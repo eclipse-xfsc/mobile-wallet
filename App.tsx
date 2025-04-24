@@ -7,6 +7,7 @@ import toastConfig from './src/components/toast/ToastConfig';
 import { initStoredLanguage } from './src/localization';
 import RootStack from './src/navigators/RootStack';
 import { ColorPallet, customTheme } from './src/theme/theme';
+import 'fast-text-encoding'
 
 const navigationTheme = {
   dark: false,

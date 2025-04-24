@@ -12,9 +12,8 @@ import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import { MainStackParams, Screens } from '../../types/navigators';
 import { OTPItem, useGetOtpList, useOtpGenerator } from './totpUtils';
 
-import { ColorPallet, TextTheme } from '../../theme/theme';
+import { ColorPallet } from '../../theme/theme';
 import { styles } from './styles';
-import { useTranslation } from 'react-i18next';
 
 type OTPGeneratorProps = StackScreenProps<
   MainStackParams,
@@ -52,7 +51,6 @@ const itemStyles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
     textAlign: 'center',
-    color: ColorPallet.baseColors.black,
   },
   otp: {
     fontSize: 26,
@@ -60,7 +58,6 @@ const itemStyles = StyleSheet.create({
     marginBottom: 10,
     textAlign: 'center',
     letterSpacing: 5,
-    color: ColorPallet.baseColors.black,
   },
   expiresIn: {
     marginBottom: 10,
@@ -93,26 +90,6 @@ const itemStyles = StyleSheet.create({
     alignSelf: 'center',
     alignItems: 'center',
     textAlign: 'center',
-  },
-});
-
-const viewStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9f9f9',
-  },
-  noItems: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 8,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  noItemsText: {
-    ...TextTheme.normal,
-    fontWeight: 'bold',
-    textAlign: 'justify',
   },
 });
 
@@ -161,36 +138,23 @@ const TOTPItem: React.FC<TOTPItemProps> = ({ item, removeOtpItem }) => {
 const TOTPView: React.FC<OTPGeneratorProps> = ({ route }) => {
   const { url } = route.params;
 
-  const { addOtpItem, removeOtpItem } = useGetOtpList();
-  const { t } = useTranslation();
+  const { otpList, addOtpItem, removeOtpItem } = useGetOtpList();
 
   useEffect(() => {
-    console.log("OTP Url shall be added: "+url)
     if (url) {
-       addOtpItem(url);
+      addOtpItem(url);
     }
   }, [url]);
 
-
-  const { otpList} = useGetOtpList();
-
   return (
-    <ScrollView style={viewStyles.container}>
-      {otpList.length > 0 ? (
-        otpList.map((item, index) => (
-          <TOTPItem
-            key={index.toString()}
-            item={item}
-            removeOtpItem={removeOtpItem}
-          />
-        ))
-      ) : (
-        <View style={viewStyles.noItems}>
-          <Text style={viewStyles.noItemsText}>
-            {t<string>('OTPTokens.NoTokens')}
-          </Text>
-        </View>
-      )}
+    <ScrollView style={styles.container}>
+      {otpList.map((item, index) => (
+        <TOTPItem
+          key={index.toString()}
+          item={item}
+          removeOtpItem={removeOtpItem}
+        />
+      ))}
     </ScrollView>
   );
 };

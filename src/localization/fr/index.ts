@@ -125,9 +125,6 @@ const translation = {
     RemoveDataButton: 'Remove All Data',
     RemoveDataMsg: 'You are going to remove the wallet from your phone. The added connections and credentials will be removed from the app. Are you sure to continue?',
   },
-  OTPTokens: {
-    NoTokens: "Aucun jeton disponible",
-  },
   ExportWallet:{
     WalletExportedPath: 'Portefeuille exporté vers le chemin :',
   },

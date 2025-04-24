@@ -19,32 +19,26 @@ export type OTPItem = {
 };
 
 function transformAlgoString(inputString: string) {
-  console.log("New OTP Link is:")
-  console.log(inputString)
   return inputString.replace(/(SHA)(\d+)/g, '$1-$2') as TOTPAlgorithm;
 }
 
 const parseOtpUrl = (otpUrl: string): OTPItem => {
   const regexPattern =
-    /otpauth:\/\/totp\/([^?]+)\?(?:.*?issuer=([^&]+).*?)?(?:.*?secret=([^&]+).*?)?(?:.*?digits=([^&]+).*?)?(?:.*?period=([^&]+).*?)?(?:.*?algorithm=([^&]+).*?)?/;
-  console.log("Try to parse TOTP URL: "+otpUrl)
+    /otpauth:\/\/totp\/([^?]+)\?(?:secret=([^&]+)&)?(?:digits=([^&]+)&)?(?:algorithm=([^&]+)&)?(?:issuer=([^&]+)&)?(?:period=([^&]+))?/;
 
   const matches = otpUrl.match(regexPattern);
 
+  console.log(matches);
+
   if (matches) {
-    const [, label, issuer, secret, digits, period, algorithm] = matches;
-
-    if (algorithm == undefined) {
-      throw new Error("Invalid OTP URL. Algorithm is missing")
-    }
-
+    const [, label, secret, digits, algorithm, issuer, period] = matches;
     return {
       label,
-      issuer,
       secret,
       digits: parseInt(digits),
-      period: parseInt(period),
       algorithm: transformAlgoString(algorithm),
+      issuer,
+      period: parseInt(period),
     };
   }
 
@@ -94,7 +88,6 @@ class OTPManager {
 
   async addOtpItem(item: OTPItem) {
     const list = (await this.getOtpList()) || [];
-    console.log("Added Label: "+item.label)
     if (list.some((i) => i.label === item.label)) {
       // replace
       const newList = list.map((i) => (i.label === item.label ? item : i));
@@ -106,7 +99,6 @@ class OTPManager {
   }
 
   async removeOtpItem(label: string) {
-    console.log("Removed Label: "+label)
     const list = (await this.getOtpList()) || [];
     const newList = list.filter((item) => item.label !== label);
     await this.listStorage.set(newList);
@@ -128,7 +120,6 @@ export const useGetOtpList = () => {
   const addOtpItem = useCallback(
     (itemUrl: string) => {
       const item = parseOtpUrl(itemUrl);
-
       otpManager.addOtpItem(item).then((newlist) => {
         setOtpList(newlist);
       });

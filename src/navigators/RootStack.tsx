@@ -12,6 +12,8 @@ import OnboardingStack from './OnboardingStack';
 import { useNavigation } from '@react-navigation/core';
 import { Screens } from '../types/navigators';
 import  {CheckLinkType} from '../screens/Scan/Scan.tsx';
+import { SdJwtVcRecordProvider } from '../agent/providers/SdJwtVcsProvider.tsx'
+import { W3cCredentialRecordProvider } from '../agent/providers/W3cCredentialsProvider.tsx'
 
 const RootStack: React.FC = () => {
   const navigation = useNavigation();
@@ -67,15 +69,19 @@ const RootStack: React.FC = () => {
 
   return authenticated && agent ? (
     <AgentProvider agent={agent}>
-      <UserInactivity
-        isActive={agent.isInitialized}
-        timeForInactivity={300000}
-        onAction={onActivityChange}
-      >
-        <MainStackContext.Provider value={mainStackProviderValue}>
-          <MainStack />
-        </MainStackContext.Provider>
-      </UserInactivity>
+      <W3cCredentialRecordProvider agent={agent}>
+        <SdJwtVcRecordProvider agent={agent}>
+          <UserInactivity
+            isActive={agent.isInitialized}
+            timeForInactivity={300000}
+            onAction={onActivityChange}
+          >
+            <MainStackContext.Provider value={mainStackProviderValue}>
+              <MainStack />
+            </MainStackContext.Provider>
+          </UserInactivity>
+       </SdJwtVcRecordProvider>
+       </W3cCredentialRecordProvider>
     </AgentProvider>
   ) : (
     <OnboardingStack setAgent={setAgent} setAuthenticated={setAuthenticated} />

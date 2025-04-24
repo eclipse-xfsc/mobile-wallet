@@ -71,16 +71,6 @@ MEDIATOR_URL=https://www.example.com/mediator
 
 In order to use PCM, you must have a mediator to use with the app. PCM is configured to use 'Implicit' mediation and requires a mediator that supports the [coordinate-mediation protocol](https://github.com/hyperledger/aries-rfcs/tree/main/features/0211-route-coordination).
 
-## Use Siera
-
-Siera is a tool that allows you to interact with the Aries Framework Javascript (AFJ) agent. You can use Siera to create a connection, issue a credential, and more. To use Siera, follow the instructions in the [Siera Documentation](https://docs.siera-cli.animo.id/).
-
-After you have Siera installed, you can use it to interact with PCM, here is an example of how to create a connection and issue a credential:
-
-```sh
-  siera automate credential-offer -s
-```
-
 ## Troubleshooting
 
 #### Hot Reloading

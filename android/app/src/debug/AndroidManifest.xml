@@ -5,14 +5,13 @@
     <application
         android:usesCleartextTraffic="true"
         tools:targetApi="28"
-        tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="openid-credential-offer" android:host="open"/>
-            </intent-filter>
-        </activity>
-    </application>
+        tools:ignore="GoogleAppIndexingWarning"/>
+    <activity android:name=".MainActivity">
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW"/>
+            <category android:name="android.intent.category.DEFAULT"/>
+            <category android:name="android.intent.category.BROWSABLE"/>
+            <data android:scheme="openid-credential-offer" android:host="open"/>
+        </intent-filter>
+    </activity>
 </manifest>
