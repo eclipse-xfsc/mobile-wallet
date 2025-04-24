@@ -1,0 +1,9 @@
+package-lock.json
+app.json
+ios/
+android/
+node_modules/
+# Ignore all png files:
+*.png
+*.snap
+*.ttf
