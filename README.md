@@ -38,6 +38,13 @@ Pre Settings:
    - In the /ios directory, open the project workspace file in Xcode.
      Once the project is open, navigate to the project's Signing & Capabilities tab and apply your personal Apple Developer Account or your organization's team to target PCM 
    - Adjust the bundle identifier if needed.
+   - update Ruby:
+        ```
+         brew install rbenv ruby-build
+         rbenv install 3.2.2
+         rbenv global 3.2.2
+        ```
+     - update gem: bundle exec pod install --repo-update
 
 ## Configure
 
