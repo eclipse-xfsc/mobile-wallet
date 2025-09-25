@@ -45,6 +45,11 @@ Pre Settings:
          rbenv global 3.2.2
         ```
      - update gem: bundle exec pod install --repo-update
+     - update the bundler if required:
+          ```
+          gem uninstall bundler -a
+          gem install bundler
+          ```
 
 ## Configure
 
