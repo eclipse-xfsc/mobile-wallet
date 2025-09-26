@@ -1,3 +1,4 @@
+// agent/modules.ts
 import {
   AnonCredsCredentialFormatService,
   AnonCredsModule,
@@ -6,95 +7,84 @@ import {
   LegacyIndyProofFormatService,
   V1CredentialProtocol,
   V1ProofProtocol,
-} from '@credo-ts/anoncreds';
-import {
-  useAgent
-} from '@credo-ts/react-hooks';
+} from '@credo-ts/anoncreds'
 import { OpenId4VcHolderModule } from '@credo-ts/openid4vc'
-import { DidKey, KeyDidCreateOptions, JwaSignatureAlgorithm, getJwkFromKey, WebDidResolver, KeyDidResolver, JwkDidRegistrar, JwkDidResolver } from '@credo-ts/core'
-import { OpenId4VciCredentialFormatProfile } from '@credo-ts/openid4vc'
-import { AskarModule } from '@credo-ts/askar';
+import { AskarModule } from '@credo-ts/askar'
 import {
-  Agent,
-  AutoAcceptCredential,
-  AutoAcceptProof,
   ConnectionsModule,
-  ConsoleLogger,
   CredentialsModule,
   DidsModule,
-  HttpOutboundTransport,
-  LogLevel,
   MediationRecipientModule,
   MediatorPickupStrategy,
   ProofsModule,
   V2CredentialProtocol,
   V2ProofProtocol,
+  AutoAcceptCredential,
+  AutoAcceptProof,
+  Agent,
+  ConsoleLogger,
+  LogLevel,
+  HttpOutboundTransport,
+  WsOutboundTransport,
   WalletConfig,
   WalletExportImportConfig,
-  WsOutboundTransport,
-} from '@credo-ts/core';
+} from '@credo-ts/core'
 import {
   IndyVdrAnonCredsRegistry,
   IndyVdrIndyDidResolver,
   IndyVdrModule,
-} from '@credo-ts/indy-vdr';
-import { agentDependencies } from '@credo-ts/react-native';
-import { anoncreds } from '@hyperledger/anoncreds-react-native';
-import { ariesAskar } from '@hyperledger/aries-askar-react-native';
-import { indyVdr } from '@hyperledger/indy-vdr-react-native';
-import uuid from 'react-native-uuid';
+} from '@credo-ts/indy-vdr'
+import { WebDidResolver, KeyDidResolver, JwkDidResolver } from '@credo-ts/core'
 
-import { indyVdrLedgers } from '../../configs/ledgers/indy';
-import { getAppGuid, setAppGuid } from '../utils/keychain';
+import { ariesAskar } from '@hyperledger/aries-askar-react-native'
+import { anoncreds } from '@hyperledger/anoncreds-react-native'
+import { indyVdr } from '@hyperledger/indy-vdr-react-native'
 
-type InitAgentProps = {
-  walletConfig: Omit<WalletConfig, 'id'>;
-  importConfig?: WalletExportImportConfig;
-};
+import { indyVdrLedgers } from '../../configs/ledgers/indy'
+import { features } from '../config/features'
+import { getAppGuid, setAppGuid } from '../utils/keychain'
+import { agentDependencies } from '@credo-ts/react-native'
+import { useAgent } from '@credo-ts/react-hooks'
+import uuid from 'react-native-uuid'
 
-const useInitAgentGuid = async () => {
-  let guid = await getAppGuid();
-  if (!guid) {
-    const agentId = uuid.v4() as string;
+export const buildModules = () => {
+  const modules: Record<string, any> = {}
 
-    await setAppGuid(agentId);
-    return agentId;
-  } else {
-    return guid.password;
+  const legacyIndyCredentialFormat = new LegacyIndyCredentialFormatService()
+  const legacyIndyProofFormat = new LegacyIndyProofFormatService()
+
+  // --- OID4VC ---
+  if (features.oid4vc?.holder) {
+    modules.openId4VcHolder = new OpenId4VcHolderModule()
   }
-};
 
-  const legacyIndyCredentialFormat = new LegacyIndyCredentialFormatService();
-  const legacyIndyProofFormat = new LegacyIndyProofFormatService();
-const modules = {
-      askar: new AskarModule({
-        ariesAskar,
-      }),
-      openId4VcHolder: new OpenId4VcHolderModule(),
-      mediationRecipient: new MediationRecipientModule({
-        // mediatorInvitationUrl: Config.MEDIATOR_URL,
-        mediatorInvitationUrl:
-          'https://mediator.dev.animo.id/invite?oob=eyJAdHlwZSI6Imh0dHBzOi8vZGlkY29tbS5vcmcvb3V0LW9mLWJhbmQvMS4xL2ludml0YXRpb24iLCJAaWQiOiIyMDc1MDM4YS05ZGU3LTRiODItYWUxYi1jNzBmNDg4MjYzYTciLCJsYWJlbCI6IkFuaW1vIE1lZGlhdG9yIiwiYWNjZXB0IjpbImRpZGNvbW0vYWlwMSIsImRpZGNvbW0vYWlwMjtlbnY9cmZjMTkiXSwiaGFuZHNoYWtlX3Byb3RvY29scyI6WyJodHRwczovL2RpZGNvbW0ub3JnL2RpZGV4Y2hhbmdlLzEuMCIsImh0dHBzOi8vZGlkY29tbS5vcmcvY29ubmVjdGlvbnMvMS4wIl0sInNlcnZpY2VzIjpbeyJpZCI6IiNpbmxpbmUtMCIsInNlcnZpY2VFbmRwb2ludCI6Imh0dHBzOi8vbWVkaWF0b3IuZGV2LmFuaW1vLmlkIiwidHlwZSI6ImRpZC1jb21tdW5pY2F0aW9uIiwicmVjaXBpZW50S2V5cyI6WyJkaWQ6a2V5Ono2TWtvSG9RTUphdU5VUE5OV1pQcEw3RGs1SzNtQ0NDMlBpNDJGY3FwR25iampMcSJdLCJyb3V0aW5nS2V5cyI6W119LHsiaWQiOiIjaW5saW5lLTEiLCJzZXJ2aWNlRW5kcG9pbnQiOiJ3c3M6Ly9tZWRpYXRvci5kZXYuYW5pbW8uaWQiLCJ0eXBlIjoiZGlkLWNvbW11bmljYXRpb24iLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa29Ib1FNSmF1TlVQTk5XWlBwTDdEazVLM21DQ0MyUGk0MkZjcXBHbmJqakxxIl0sInJvdXRpbmdLZXlzIjpbXX1dfQ',
-        mediatorPickupStrategy: MediatorPickupStrategy.Implicit,
-      }),
-      indyVdr: new IndyVdrModule({
+  // --- Indy ---
+  if (features.indy?.enabled) {
+    if (features.indy.askar) {
+      modules.askar = new AskarModule({ ariesAskar })
+    }
+
+    if (features.indy?.mediatorUrl) {
+      modules.mediationRecipient = new MediationRecipientModule({
+        mediatorInvitationUrl: features.indy.mediatorUrl,
+        mediatorPickupStrategy: features.indy.mediatorPickupStrategy ?? MediatorPickupStrategy.Implicit,
+      })
+    }
+
+    if (features.indy.indyVdr) {
+      modules.indyVdr = new IndyVdrModule({
         indyVdr,
         networks: indyVdrLedgers,
-      }),
-      connections: new ConnectionsModule({
-        autoAcceptConnections: true,
-      }),
-      dids: new DidsModule({
-        resolvers: [new IndyVdrIndyDidResolver(),
-                    new WebDidResolver(),
-                    new KeyDidResolver(),
-                    new JwkDidResolver()],
-      }),
-      anoncreds: new AnonCredsModule({
-        anoncreds: anoncreds,
+      })
+    }
+
+    if (features.indy.anoncreds) {
+      modules.anoncreds = new AnonCredsModule({
+        anoncreds,
         registries: [new IndyVdrAnonCredsRegistry()],
-      }),
-      credentials: new CredentialsModule({
+      })
+
+      modules.credentials = new CredentialsModule({
         credentialProtocols: [
           new V1CredentialProtocol({
             indyCredentialFormat: legacyIndyCredentialFormat,
@@ -107,12 +97,11 @@ const modules = {
           }),
         ],
         autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-      }),
-      proofs: new ProofsModule({
+      })
+
+      modules.proofs = new ProofsModule({
         proofProtocols: [
-          new V1ProofProtocol({
-            indyProofFormat: legacyIndyProofFormat,
-          }),
+          new V1ProofProtocol({ indyProofFormat: legacyIndyProofFormat }),
           new V2ProofProtocol({
             proofFormats: [
               new AnonCredsProofFormatService(),
@@ -121,23 +110,50 @@ const modules = {
           }),
         ],
         autoAcceptProofs: AutoAcceptProof.ContentApproved,
-      }),
-    } as const
+      })
 
-    export type AppAgent = Agent<typeof modules>
+      modules.dids = new DidsModule({
+        resolvers: [
+          new IndyVdrIndyDidResolver(),
+          new WebDidResolver(),
+          new KeyDidResolver(),
+          new JwkDidResolver(),
+        ],
+      })
 
-export const useCreateAgent = async ({
-  walletConfig,
-  importConfig,
-}: InitAgentProps) => {
-  const label = await useInitAgentGuid();
+      modules.connections = new ConnectionsModule({
+        autoAcceptConnections: true,
+      })
+    }
+  }
 
+  return modules as const
+}
 
+type InitAgentProps = {
+  walletConfig: Omit<WalletConfig, 'id'>
+  importConfig?: WalletExportImportConfig
+}
+
+const useInitAgentGuid = async () => {
+  let guid = await getAppGuid()
+  if (!guid) {
+    const agentId = uuid.v4() as string
+    await setAppGuid(agentId)
+    return agentId
+  }
+  return guid.password
+}
+
+export const useCreateAgent = async ({ walletConfig, importConfig }: InitAgentProps) => {
+  const label = await useInitAgentGuid()
 
   const fullWalletConfig = {
     ...walletConfig,
     id: label,
-  };
+  }
+
+  const modules = buildModules()
 
   const newAgent = new Agent({
     dependencies: agentDependencies,
@@ -147,28 +163,25 @@ export const useCreateAgent = async ({
       autoUpdateStorageOnStartup: true,
       logger: new ConsoleLogger(LogLevel.trace),
     },
-    modules ,
-  });
+    modules,
+  })
 
   if (importConfig) {
     try {
-      await newAgent.wallet.import(fullWalletConfig, importConfig);
-      await newAgent.wallet.initialize(fullWalletConfig);
+      await newAgent.wallet.import(fullWalletConfig, importConfig)
+      await newAgent.wallet.initialize(fullWalletConfig)
     } catch (error) {
-      console.log('Failed to import wallet');
+      console.log('Failed to import wallet')
     }
   }
 
-  const wsTransport = new WsOutboundTransport();
-  const httpTransport = new HttpOutboundTransport();
+  newAgent.registerOutboundTransport(new WsOutboundTransport())
+  newAgent.registerOutboundTransport(new HttpOutboundTransport())
 
-  newAgent.registerOutboundTransport(wsTransport);
-  newAgent.registerOutboundTransport(httpTransport);
+  await newAgent.initialize()
+  return newAgent
+}
 
-  await newAgent.initialize();
+export type AgentType = Awaited<ReturnType<typeof useCreateAgent>>
 
-  return newAgent;
-};
-
-export type AgentType = Awaited<ReturnType<typeof useCreateAgent>>;
-export const useAppAgent = () => useAgent<AgentType>();
+export const useAppAgent = () => useAgent<AgentType>()
