@@ -7,7 +7,7 @@ import { StyleSheet, View } from 'react-native';
 import { UserCredentials } from 'react-native-keychain';
 import Share from 'react-native-share';
 import Toast from 'react-native-toast-message';
-import RNFetchBlob from 'rn-fetch-blob';
+import RNFetchBlob from 'react-native-blob-util'; // <-- ersetzt
 import { Loader, TextInput } from '../../components';
 import { ToastType } from '../../components/toast/BaseToast';
 
@@ -27,9 +27,7 @@ const ExportWallet = () => {
       setLoading(true);
 
       const { fs } = RNFetchBlob;
-
       const documentDirectory = fs.dirs.DocumentDir;
-
       const zipDirectory = `${documentDirectory}/PCM_Backup`;
 
       const destFileExists = await fs.exists(zipDirectory);
@@ -45,6 +43,7 @@ const ExportWallet = () => {
         .mkdir(zipDirectory)
         .then(() => console.log('generated'))
         .catch((err) => console.log('not generated', err));
+
       const encryptedFileName = `${WALLET_FILE_NAME}.wallet`;
       const encryptedFileLocation = `${zipDirectory}/${encryptedFileName}`;
 

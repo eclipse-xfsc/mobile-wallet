@@ -1,64 +1,64 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import Keychain from 'react-native-keychain';
-import { TOTP } from 'totp-generator';
-// TOTP: otpauth://totp/react-keycloak:test_otp?secret=NNTUIQRXMNAVE5TUK43UKU3IKJRECVSI&digits=6&algorithm=SHA1&issuer=react-keycloak&period=30
+import { useCallback, useEffect, useRef, useState } from 'react'
+import Keychain from 'react-native-keychain'
+import * as OTPAuth from 'otpauth'
 
-type ParametersOfGenerate = Parameters<typeof TOTP.generate>;
+// ------------------ Typen ------------------
 
-type TOTPAlgorithm = NonNullable<
-  NonNullable<ParametersOfGenerate[1]>['algorithm']
->;
+export type TOTPAlgorithm = 'SHA-1' | 'SHA-256' | 'SHA-512'
 
 export type OTPItem = {
-  label: string;
-  issuer: string;
-  digits: number;
-  period: number;
-  secret: string;
-  algorithm: TOTPAlgorithm;
-};
+  label: string
+  issuer: string
+  digits: number
+  period: number
+  secret: string
+  algorithm: TOTPAlgorithm
+}
 
-function transformAlgoString(inputString: string) {
-  return inputString.replace(/(SHA)(\d+)/g, '$1-$2') as TOTPAlgorithm;
+// ------------------ Hilfsfunktionen ------------------
+
+function transformAlgoString(inputString: string): TOTPAlgorithm {
+  return inputString.replace(/(SHA)(\d+)/g, '$1-$2') as TOTPAlgorithm
 }
 
 const parseOtpUrl = (otpUrl: string): OTPItem => {
   const regexPattern =
-    /otpauth:\/\/totp\/([^?]+)\?(?:secret=([^&]+)&)?(?:digits=([^&]+)&)?(?:algorithm=([^&]+)&)?(?:issuer=([^&]+)&)?(?:period=([^&]+))?/;
+    /otpauth:\/\/totp\/([^?]+)\?(?:secret=([^&]+)&)?(?:digits=([^&]+)&)?(?:algorithm=([^&]+)&)?(?:issuer=([^&]+)&)?(?:period=([^&]+))?/
 
-  const matches = otpUrl.match(regexPattern);
-
-  console.log(matches);
+  const matches = otpUrl.match(regexPattern)
 
   if (matches) {
-    const [, label, secret, digits, algorithm, issuer, period] = matches;
+    const [, label, secret, digits, algorithm, issuer, period] = matches
     return {
       label,
       secret,
-      digits: parseInt(digits),
-      algorithm: transformAlgoString(algorithm),
-      issuer,
-      period: parseInt(period),
-    };
+      digits: parseInt(digits || '6', 10),
+      algorithm: transformAlgoString(algorithm || 'SHA1'),
+      issuer: issuer || '',
+      period: parseInt(period || '30', 10),
+    }
   }
 
-  throw new Error('Invalid OTP URL');
-};
+  throw new Error('Invalid OTP URL')
+}
+
+// ------------------ Secure Storage Wrapper ------------------
 
 class SecureStorage<T> {
-  serviceKey: string;
+  serviceKey: string
+  private userStorageKey: string = 'PCMApp'
 
-  private userStorageKey: string = 'PCMApp';
   constructor(serviceKey: string) {
-    this.serviceKey = serviceKey;
+    this.serviceKey = serviceKey
   }
+
   async get(): Promise<T | undefined> {
     return Keychain.getGenericPassword({ service: this.serviceKey }).then(
       (creds) =>
         creds && creds.username === this.userStorageKey
           ? JSON.parse(creds.password)
-          : undefined,
-    );
+          : undefined
+    )
   }
 
   async set(value: T) {
@@ -67,139 +67,138 @@ class SecureStorage<T> {
       JSON.stringify(value),
       {
         service: this.serviceKey,
-      },
-    );
+      }
+    )
   }
 }
 
+// ------------------ OTP Manager ------------------
+
 class OTPManager {
-  private listStorageKey: string = 'otpList';
+  private listStorageKey: string = 'otpList'
+  private listStorage: SecureStorage<OTPItem[]>
+  keychainUser: string = 'PCMApp'
 
-  private listStorage: SecureStorage<OTPItem[]>;
-
-  keychainUser: string = 'PCMApp';
   constructor() {
-    this.listStorage = new SecureStorage<OTPItem[]>(this.listStorageKey);
+    this.listStorage = new SecureStorage<OTPItem[]>(this.listStorageKey)
   }
 
   async getOtpList() {
-    return this.listStorage.get();
+    return this.listStorage.get()
   }
 
   async addOtpItem(item: OTPItem) {
-    const list = (await this.getOtpList()) || [];
+    const list = (await this.getOtpList()) || []
     if (list.some((i) => i.label === item.label)) {
       // replace
-      const newList = list.map((i) => (i.label === item.label ? item : i));
-      await this.listStorage.set(newList);
-      return newList;
+      const newList = list.map((i) => (i.label === item.label ? item : i))
+      await this.listStorage.set(newList)
+      return newList
     }
-    await this.listStorage.set([...list, item]);
-    return list;
+    const newList = [...list, item]
+    await this.listStorage.set(newList)
+    return newList
   }
 
   async removeOtpItem(label: string) {
-    const list = (await this.getOtpList()) || [];
-    const newList = list.filter((item) => item.label !== label);
-    await this.listStorage.set(newList);
-    return newList;
+    const list = (await this.getOtpList()) || []
+    const newList = list.filter((item) => item.label !== label)
+    await this.listStorage.set(newList)
+    return newList
   }
 }
 
-export const useGetOtpList = () => {
-  const [otpList, setOtpList] = useState<OTPItem[]>([]);
+// ------------------ React Hooks ------------------
 
-  const [otpManager] = useState(new OTPManager());
+export const useGetOtpList = () => {
+  const [otpList, setOtpList] = useState<OTPItem[]>([])
+  const [otpManager] = useState(new OTPManager())
 
   useEffect(() => {
     otpManager.getOtpList().then((list) => {
-      if (list) setOtpList(list);
-    });
-  }, []);
+      if (list) setOtpList(list)
+    })
+  }, [otpManager])
 
   const addOtpItem = useCallback(
     (itemUrl: string) => {
-      const item = parseOtpUrl(itemUrl);
-      otpManager.addOtpItem(item).then((newlist) => {
-        setOtpList(newlist);
-      });
+      const item = parseOtpUrl(itemUrl)
+      otpManager.addOtpItem(item).then((newList) => {
+        setOtpList(newList)
+      })
     },
-    [otpList],
-  );
+    [otpManager]
+  )
 
   const removeOtpItem = useCallback(
     (label: string) => {
       otpManager.removeOtpItem(label).then((newList) => {
-        setOtpList(newList);
-      });
+        setOtpList(newList)
+      })
     },
-    [otpList],
-  );
+    [otpManager]
+  )
 
   return {
     otpList,
     addOtpItem,
     removeOtpItem,
-  };
-};
+  }
+}
 
 export const useOtpGenerator = (OTPItem: OTPItem) => {
-  const { label, secret, digits, issuer, period, algorithm } = OTPItem;
+  const { label, secret, digits, issuer, period, algorithm } = OTPItem
+  const timerInterval = useRef<NodeJS.Timeout | null>(null)
 
-  const timerInterval = useRef<NodeJS.Timeout | null>(null);
+  // TOTP-Instanz erstellen
+  const totp = new OTPAuth.TOTP({
+    issuer,
+    label,
+    algorithm,
+    digits,
+    period,
+    secret: OTPAuth.Secret.fromBase32(secret),
+  })
 
-  const [otp, setOtp] = useState(
-    TOTP.generate(secret, {
-      digits,
-      algorithm,
-      period: period,
-      timestamp: Date.now(),
-    }),
-  );
+  const [otp, setOtp] = useState(totp.generate())
   const [timeInfo, setTimeInfo] = useState({
     progress: 0,
     remainingTime: 0,
-  });
+  })
 
   const generateNewCode = useCallback(() => {
-    const OTP = TOTP.generate(secret, {
-      digits,
-      algorithm,
-      period: period,
-      timestamp: Date.now(),
-    });
-    setOtp(OTP);
-  }, [OTPItem]);
+    setOtp(totp.generate())
+  }, [totp])
 
   const getRemainingTime = useCallback(() => {
-    return Math.floor(
-      period + (period - (new Date().getTime() % (period * 1000))) / 1000,
-    );
-  }, [OTPItem]);
+    const now = Date.now()
+    const counter = Math.floor(now / 1000 / period)
+    const next = (counter + 1) * period
+    return next - Math.floor(now / 1000)
+  }, [period])
 
   const startTimer = useCallback(() => {
     timerInterval.current = setInterval(() => {
-      let remainingTime = getRemainingTime();
-      generateNewCode();
-
-      let progress = 100 - (100 * remainingTime) / period;
-      setTimeInfo({ progress, remainingTime });
-    }, 1000);
-  }, [OTPItem]);
+      const remainingTime = getRemainingTime()
+      generateNewCode()
+      const progress = 100 - (100 * remainingTime) / period
+      setTimeInfo({ progress, remainingTime })
+    }, 1000)
+  }, [generateNewCode, getRemainingTime, period])
 
   useEffect(() => {
-    startTimer();
+    startTimer()
     return () => {
       if (timerInterval.current) {
-        clearInterval(timerInterval.current);
+        clearInterval(timerInterval.current)
       }
-    };
-  }, []);
+    }
+  }, [startTimer])
 
   return {
     label,
     issuer,
     otp,
     timeInfo,
-  };
-};
+  }
+}

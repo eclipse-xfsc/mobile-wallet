@@ -5,32 +5,37 @@
 #import <React/RCTRootView.h>
 #import <React/RCTLinkingManager.h>
 
-
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-  self.moduleName = @"PersonalCredentialManager";
+   self.moduleName = @"PersonalCredentialManager";
   // You can add your custom initial props in the dictionary below.
   // They will be passed down to the ViewController used by React Native.
-  self.initialProps = @{};
+   self.initialProps = @{};
   
-  RCTBridge *bridge = [[RCTBridge alloc] initWithDelegate:self launchOptions:launchOptions];
-  RCTRootView *rootView = [[RCTRootView alloc] initWithBridge:bridge moduleName:@"YourApp" initialProperties:nil];
+  BOOL appLaunched = [super application:application didFinishLaunchingWithOptions:launchOptions];
+   if (!appLaunched) {
+     return NO;
+   }
   
-  self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-  UIViewController *rootViewController = [UIViewController new];
-  rootViewController.view = rootView;
-  self.window.rootViewController = rootViewController;
-  [self.window makeKeyAndVisible];
-  return [super application:application didFinishLaunchingWithOptions:launchOptions];
+  // RCTBridge *bridge = [[RCTBridge alloc] initWithDelegate:self launchOptions:launchOptions];
+  // RCTRootView *rootView = [[RCTRootView alloc] initWithBridge:bridge moduleName:@"YourApp" initialProperties:nil];
+  
+  // self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+  // UIViewController *rootViewController = [UIViewController new];
+  // rootViewController.view = rootView;
+  // self.window.rootViewController = rootViewController;
+  // [self.window makeKeyAndVisible];
+  return appLaunched;
 }
 
 - (NSURL *)sourceURLForBridge:(RCTBridge *)bridge
 {
-  return [self getBundleURL];
+  return [self bundleURL];
 }
-- (NSURL *)getBundleURL
+
+- (NSURL *)bundleURL
 {
 #if DEBUG
   return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@"index"];

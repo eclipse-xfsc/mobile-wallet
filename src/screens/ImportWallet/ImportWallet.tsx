@@ -45,14 +45,16 @@ const ImportWallet: React.FC<ImportWalletProps> = ({ navigation, route }) => {
   useEffect(() => {
     const handleBackButtonClick = () => {
       navigation.goBack();
-      return true;
+      return true; // true = handled
     };
-    BackHandler.addEventListener('hardwareBackPress', handleBackButtonClick);
+
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      handleBackButtonClick,
+    );
+
     return () => {
-      BackHandler.removeEventListener(
-        'hardwareBackPress',
-        handleBackButtonClick,
-      );
+      subscription.remove();
     };
   }, [navigation]);
 

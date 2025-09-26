@@ -26,7 +26,7 @@ const Terms: React.FC<TermsProps> = ({ navigation }) => {
     navigation.navigate(Screens.Onboarding);
   };
   useFocusEffect(
-    useCallback(() => {
+  useCallback(() => {
       const onBackPress = async () => {
         backCount++;
         if (backCount === 1) {
@@ -39,10 +39,12 @@ const Terms: React.FC<TermsProps> = ({ navigation }) => {
         return true;
       };
 
-      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        onBackPress,
+      );
 
-      return () =>
-        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
     }, [backCount, navigation]),
   );
   return (

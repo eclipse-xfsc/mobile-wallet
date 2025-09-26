@@ -15,7 +15,8 @@ target 'PersonalCredentialManager' do
     :path => config[:reactNativePath],
     :hermes_enabled => true,   # Hermes aktiv
     :fabric_enabled => false,  # nur falls du kein Fabric benutzt
-    :app_path => File.join(__dir__, "..")  # -> ios/..
+    :app_path => File.join(__dir__, ".."),  # -> ios/..
+    :new_arch_enabled => false
   )
 
 
@@ -68,4 +69,6 @@ target 'PersonalCredentialManager' do
       end
     end
   end
+
+
 end
