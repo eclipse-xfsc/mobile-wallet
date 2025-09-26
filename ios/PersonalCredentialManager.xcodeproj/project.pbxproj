@@ -11,8 +11,9 @@
 		13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.mm */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
-		58C0408E5701A72ABEE93FC9 /* libPods-PersonalCredentialManager.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C8711FD9727B7708B48208C8 /* libPods-PersonalCredentialManager.a */; };
+		2DDBFD606840D46D4D35B61A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 7A04273CB2088161B65E6E8A /* PrivacyInfo.xcprivacy */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		E917B3F22BCFD154496F8671 /* libPods-PersonalCredentialManager.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 030268DCB407465BF936DBD2 /* libPods-PersonalCredentialManager.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -29,17 +30,18 @@
 		00E356EE1AD99517003FC87E /* PersonalCredentialManagerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PersonalCredentialManagerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		00E356F11AD99517003FC87E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		00E356F21AD99517003FC87E /* PersonalCredentialManagerTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PersonalCredentialManagerTests.m; sourceTree = "<group>"; };
+		019A55E621F1EE1B01FEC5F2 /* Pods-PersonalCredentialManager.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PersonalCredentialManager.debug.xcconfig"; path = "Target Support Files/Pods-PersonalCredentialManager/Pods-PersonalCredentialManager.debug.xcconfig"; sourceTree = "<group>"; };
+		030268DCB407465BF936DBD2 /* libPods-PersonalCredentialManager.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-PersonalCredentialManager.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07F961A680F5B00A75B9A /* PersonalCredentialManager.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PersonalCredentialManager.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FAF1A68108700A75B9A /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AppDelegate.h; path = PersonalCredentialManager/AppDelegate.h; sourceTree = "<group>"; };
 		13B07FB01A68108700A75B9A /* AppDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = AppDelegate.mm; path = PersonalCredentialManager/AppDelegate.mm; sourceTree = "<group>"; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = PersonalCredentialManager/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = PersonalCredentialManager/Info.plist; sourceTree = "<group>"; };
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = PersonalCredentialManager/main.m; sourceTree = "<group>"; };
+		2A70CBF79C57C5075ED2C7E9 /* Pods-PersonalCredentialManager.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PersonalCredentialManager.release.xcconfig"; path = "Target Support Files/Pods-PersonalCredentialManager/Pods-PersonalCredentialManager.release.xcconfig"; sourceTree = "<group>"; };
+		7A04273CB2088161B65E6E8A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = PersonalCredentialManager/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = PersonalCredentialManager/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		879D7E0A7B3EDCAE54217CEF /* Pods-PersonalCredentialManager.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PersonalCredentialManager.release.xcconfig"; path = "Target Support Files/Pods-PersonalCredentialManager/Pods-PersonalCredentialManager.release.xcconfig"; sourceTree = "<group>"; };
 		A52D88A32B87713E0006A61E /* PersonalCredentialManager.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = PersonalCredentialManager.entitlements; path = PersonalCredentialManager/PersonalCredentialManager.entitlements; sourceTree = "<group>"; };
-		C8711FD9727B7708B48208C8 /* libPods-PersonalCredentialManager.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-PersonalCredentialManager.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		CA68497E4F838F99F6E06C20 /* Pods-PersonalCredentialManager.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PersonalCredentialManager.debug.xcconfig"; path = "Target Support Files/Pods-PersonalCredentialManager/Pods-PersonalCredentialManager.debug.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -55,7 +57,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				58C0408E5701A72ABEE93FC9 /* libPods-PersonalCredentialManager.a in Frameworks */,
+				E917B3F22BCFD154496F8671 /* libPods-PersonalCredentialManager.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -89,6 +91,7 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB71A68108700A75B9A /* main.m */,
+				7A04273CB2088161B65E6E8A /* PrivacyInfo.xcprivacy */,
 			);
 			name = PersonalCredentialManager;
 			sourceTree = "<group>";
@@ -97,7 +100,7 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				C8711FD9727B7708B48208C8 /* libPods-PersonalCredentialManager.a */,
+				030268DCB407465BF936DBD2 /* libPods-PersonalCredentialManager.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -136,8 +139,8 @@
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				CA68497E4F838F99F6E06C20 /* Pods-PersonalCredentialManager.debug.xcconfig */,
-				879D7E0A7B3EDCAE54217CEF /* Pods-PersonalCredentialManager.release.xcconfig */,
+				019A55E621F1EE1B01FEC5F2 /* Pods-PersonalCredentialManager.debug.xcconfig */,
+				2A70CBF79C57C5075ED2C7E9 /* Pods-PersonalCredentialManager.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -167,13 +170,13 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "PersonalCredentialManager" */;
 			buildPhases = (
-				1D49D6CFFA4348409D882556 /* [CP] Check Pods Manifest.lock */,
+				602C02E24EFF393FA075204F /* [CP] Check Pods Manifest.lock */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
-				34C67C61C20DCBECBF06AB98 /* [CP] Embed Pods Frameworks */,
-				61A9CF40172D15E5DC9AD73E /* [CP] Copy Pods Resources */,
+				E1B341EDC007CAE9F8F73775 /* [CP] Embed Pods Frameworks */,
+				85B596B368BAC556A585B8FD /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -234,6 +237,7 @@
 			files = (
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
+				2DDBFD606840D46D4D35B61A /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -256,7 +260,7 @@
 			shellPath = /bin/sh;
 			shellScript = "set -e\n\nWITH_ENVIRONMENT=\"../node_modules/react-native/scripts/xcode/with-environment.sh\"\nREACT_NATIVE_XCODE=\"../node_modules/react-native/scripts/react-native-xcode.sh\"\n\n/bin/sh -c \"$WITH_ENVIRONMENT $REACT_NATIVE_XCODE\"\n";
 		};
-		1D49D6CFFA4348409D882556 /* [CP] Check Pods Manifest.lock */ = {
+		602C02E24EFF393FA075204F /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -278,24 +282,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		34C67C61C20DCBECBF06AB98 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-PersonalCredentialManager/Pods-PersonalCredentialManager-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-PersonalCredentialManager/Pods-PersonalCredentialManager-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-PersonalCredentialManager/Pods-PersonalCredentialManager-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		61A9CF40172D15E5DC9AD73E /* [CP] Copy Pods Resources */ = {
+		85B596B368BAC556A585B8FD /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -303,13 +290,38 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PersonalCredentialManager/Pods-PersonalCredentialManager-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-PersonalCredentialManager/Pods-PersonalCredentialManager-resources-${CONFIGURATION}-output-files.xcfilelist",
 			);
+			outputPaths = (
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-PersonalCredentialManager/Pods-PersonalCredentialManager-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		E1B341EDC007CAE9F8F73775 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-PersonalCredentialManager/Pods-PersonalCredentialManager-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-PersonalCredentialManager/Pods-PersonalCredentialManager-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-PersonalCredentialManager/Pods-PersonalCredentialManager-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -394,16 +406,18 @@
 		};
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = CA68497E4F838F99F6E06C20 /* Pods-PersonalCredentialManager.debug.xcconfig */;
+			baseConfigurationReference = 019A55E621F1EE1B01FEC5F2 /* Pods-PersonalCredentialManager.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = PersonalCredentialManager/PersonalCredentialManager.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = P2KF5SHM9P;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = PersonalCredentialManager/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.3;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -416,23 +430,28 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = eu.gaiax.pcm;
 				PRODUCT_NAME = PersonalCredentialManager;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				REACT_NATIVE_PATH = "../node_modules/react-native";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
+				USE_HERMES = true;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 879D7E0A7B3EDCAE54217CEF /* Pods-PersonalCredentialManager.release.xcconfig */;
+			baseConfigurationReference = 2A70CBF79C57C5075ED2C7E9 /* Pods-PersonalCredentialManager.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = PersonalCredentialManager/PersonalCredentialManager.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = P2KF5SHM9P;
 				INFOPLIST_FILE = PersonalCredentialManager/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.3;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -446,7 +465,10 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = eu.gaiax.pcm;
 				PRODUCT_NAME = PersonalCredentialManager;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				REACT_NATIVE_PATH = "../node_modules/react-native";
 				SWIFT_VERSION = 5.0;
+				USE_HERMES = true;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
@@ -534,8 +556,9 @@
 					"-Wl",
 					"-ld_classic",
 				);
-				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../Users/A107349446/Documents/xfsc/mobile-wallet/ios/../../node_modules/react-native";
 				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
 				USE_HERMES = true;
 			};
 			name = Debug;
@@ -619,7 +642,7 @@
 					"-Wl",
 					"-ld_classic",
 				);
-				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../Users/A107349446/Documents/xfsc/mobile-wallet/ios/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				USE_HERMES = true;
 				VALIDATE_PRODUCT = YES;
