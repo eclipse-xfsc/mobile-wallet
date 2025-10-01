@@ -1,53 +1,55 @@
-import { CredentialExchangeRecord } from '@credo-ts/core';
-import React from 'react';
-import { useTranslation } from 'react-i18next';
+import React from 'react'
 import {
   StyleSheet,
   ViewStyle,
-} from 'react-native';
-import {Image} from 'react-native';
-import { Card, View, Text } from '@ant-design/react-native';
-
-import { Title } from '..';
-
-import { dateFormatOptions } from '../../constants';
-import { ContactTheme, TextTheme } from '../../theme/theme';
+  StyleProp,
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+} from 'react-native'
+import { Card } from '@ant-design/react-native'
+import { FileBadge } from 'lucide-react-native'
 
 import { useHasInternetConnection } from '../../hooks'
 import type { DisplayImage } from '../../agent'
-import { FileBadge } from 'lucide-react-native';
-import { hexColors } from './config/config';
+import { hexColors } from './config/config'
+
 interface CredentialCardProps {
   onPress?(): void
-  credential: any;
+  credential: any
   name: string
+  title: string
   issuerName: string
   subtitle?: string
-  bgColor?: string
+  backgroundColor?: string
   textColor?: string
-  issuerImage?: DisplayImage
+  logo?: DisplayImage
   backgroundImage?: DisplayImage
   shadow?: boolean
+  style?: StyleProp<ViewStyle>
 }
 
 export function getTextColorBasedOnBg(bgColor: string) {
-  return Number.parseInt(bgColor.replace('#', ''), 16) > 0xffffff / 2 ? '#1F1F1F' : '#1F1F1F'
+  return Number.parseInt(bgColor.replace('#', ''), 16) > 0xffffff / 2
+    ? '#1F1F1F'
+    : '#FFFFFF'
 }
 
-/**
- * Darken the shade of a custom color based on the hex color and a percentage
- * used to dynamically create onPress styling for custom colors
- */
 export function darken(color: string, percent: number): string {
   const hexColor = color.startsWith('#')
     ? color
-    : ((hexColors as Record<string, string>)[color.startsWith('$') ? color.slice(1) : color] as string)
+    : ((hexColors as Record<string, string>)[
+        color.startsWith('$') ? color.slice(1) : color
+      ] as string)
+
   const f = Number.parseInt(hexColor.slice(1), 16)
   const t = percent < 0 ? 0 : 255
   const p = percent < 0 ? percent * -1 : percent
   const R = f >> 16
   const G = (f >> 8) & 0x00ff
   const B = f & 0x0000ff
+
   return `#${(
     0x1000000 +
     (Math.round((t - R) * p) + R) * 0x10000 +
@@ -58,120 +60,131 @@ export function darken(color: string, percent: number): string {
     .slice(1)}`
 }
 
-
 const CredentialCard: React.FC<CredentialCardProps> = ({
   onPress,
   credential,
-  issuerImage,
+  logo,
   backgroundImage,
   textColor,
   name,
   issuerName,
   subtitle,
-  bgColor,
+  backgroundColor,
   shadow = true,
+  style,
 }) => {
-
-  console.log(credential)
-  
   const hasInternet = useHasInternetConnection()
 
-  textColor = textColor ? textColor : getTextColorBasedOnBg(bgColor ?? '#000')
+  const bgColor = backgroundColor ?? hexColors['grey-100']
+  const textColorValue = textColor ?? getTextColorBasedOnBg(bgColor)
 
-  const icon = issuerImage?.url ? (
-    <Image src={issuerImage.url} alt={issuerImage.altText} width={64} height={48} />
+  const icon = logo?.uri ? (
+    <Image
+      source={{ uri: logo.uri }}
+      style={{ width: 64, height: 48, resizeMode: 'contain' }}
+    />
   ) : (
-    <View width={48} height={48} bg="$lightTranslucent" ai="center" br="$12" pad="md">
+    <View
+      style={{
+        width: 48,
+        height: 48,
+        backgroundColor: '#EEE',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 12,
+      }}
+    >
       <FileBadge color={hexColors['grey-100']} />
     </View>
   )
 
-  const getPressStyle = () => {
-    if (!onPress) return {}
-    if (backgroundImage?.url) return { opacity: 0.9 }
-    return { backgroundColor: darken(bgColor ?? hexColors['grey-100'], 0.1) }
+  const content = (
+    <Card style={[styles.card, style]}>
+      <Card.Header
+        style={styles.header}
+        thumb={icon}
+        thumbStyle={styles.iconStyle}
+        extra={
+          <View style={styles.headerRight}>
+            <Text
+              style={[styles.name, { color: textColorValue }]}
+              numberOfLines={2}
+            >
+              {issuerName}
+            </Text>
+            {subtitle && (
+              <Text
+                style={[
+                  styles.subtitle,
+                  { color: textColorValue, opacity: 0.8 },
+                ]}
+                numberOfLines={1}
+              >
+                {subtitle}
+              </Text>
+            )}
+          </View>
+        }
+      />
+      <Card.Footer
+        content={
+          <View>
+            <Text
+              style={[
+                styles.footerText,
+                { color: textColorValue, opacity: 0.8 },
+              ]}
+            >
+              Issuer
+            </Text>
+            <Text
+              style={[styles.issuerName, { color: textColorValue }]}
+              numberOfLines={2}
+            >
+              {name}
+            </Text>
+          </View>
+        }
+      />
+      {backgroundImage?.uri ? (
+        <View
+          style={[
+            styles.backgroundContainer,
+            { backgroundColor: bgColor ?? hexColors['grey-100'] },
+          ]}
+        >
+          {hasInternet ? (
+            <Image
+              source={{ uri: backgroundImage.uri }}
+              style={styles.backgroundImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.backgroundPlaceholder} />
+          )}
+        </View>
+      ) : (
+        <View style={styles.backgroundContainer} />
+      )}
+    </Card>
+  )
+
+  if (onPress) {
+    return <TouchableOpacity onPress={onPress}>{content}</TouchableOpacity>
   }
 
-  const bgColorValue = backgroundImage?.url ? 'transparent' : bgColor ?? hexColors['grey-100']
+  return content
+}
 
-  console.log(hasInternet)
-  console.log(backgroundImage?.url)
-  console.log(bgColorValue)
+export default CredentialCard
 
-
-  return (
-        <View style={[styles.container]}>
-        <Card
-          style={styles.card}
-          bodyStyle={styles.bodyStyle}
-          onPress={onPress}
-        >
-          <Card.Header
-            style={styles.header}
-            thumb={icon}
-            thumbStyle={styles.iconStyle}
-            extra={
-              <View style={styles.headerRight}>
-                <Text style={[styles.name, { color: textColor }]} numberOfLines={2}>
-                  {issuerName}
-                </Text>
-                <Text style={[styles.subtitle, { color: textColor, opacity: 0.8 }]} numberOfLines={1}>
-                  {subtitle}
-                </Text>
-              </View>
-            }
-          />
-          <Card.Footer
-            content={
-              <View>
-                <Text style={[styles.footerText, { color: textColor, opacity: 0.8 }]}>
-                  Issuer
-                </Text>
-                <Text style={[styles.issuerName, { color: textColor }]} numberOfLines={2}>
-                  {name}
-                </Text>
-              </View>
-            }
-          />
-          {backgroundImage && backgroundImage.url ? (
-            <View style={[styles.backgroundContainer, { backgroundColor: bgColorValue ?? hexColors['grey-100'] }]}>
-              {hasInternet ? (
-                <Image
-                  source={{ uri: backgroundImage.url }}
-                  style={styles.backgroundImage}
-                  resizeMode="cover"
-                />
-              ) : (
-                <View style={styles.backgroundPlaceholder} />
-              )}
-            </View>
-          ) : <View style={styles.backgroundContainer}/>}
-        </Card>
-      </View>
-    );
-};
-
-export default CredentialCard;
 const styles = StyleSheet.create({
-  container: {
-    borderRadius: 12,
-    borderWidth: 0.5,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
-    overflow: 'hidden',
-    position: 'relative',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
-  },
   card: {
     borderRadius: 12,
-    backgroundColor: 'transparent',
+    overflow: 'hidden',
     width: '100%',
-  },
-  bodyStyle: {
-    height: 64,
-    padding: 0,
+    backgroundColor: 'transparent',
+    elevation: 6,
   },
   header: {
     padding: 0,
@@ -218,4 +231,4 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#1F1F1F',
   },
-});
+})

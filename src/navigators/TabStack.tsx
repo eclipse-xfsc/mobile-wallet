@@ -12,6 +12,8 @@ import { Screens, TabStackParams, TabStacks } from '../types/navigators';
 import SettingStack from './SettingStack';
 import ContactStack from './ContactStack';
 import CredentialStack from './CredentialStack';
+import PresentationStack from './PresentationStack';
+import OtpStack from './OtpStack';
 import HomeStack from './HomeStack';
 import Images from '../assets';
 import { MainStackContext } from '../utils/helpers';
@@ -123,14 +125,14 @@ const TabStack: React.FC = () => {
         }}
       >
         <MainTabNavigator.Screen
-          name={TabStacks.HomeStack}
-          component={HomeStack}
+          name={TabStacks.CredentialStack}
+          component={CredentialStack}
           options={{
             tabBarIcon: ({ focused }) => (
               <TabBarIcon focused={focused} imageName={Images.homeIcon} />
             ),
             tabBarLabel: () => (
-              <TabBarLabel label={t<string>('TabStack.Home')} />
+              <TabBarLabel label={t<string>('TabStack.Credentials')} />
             ),
             tabBarBadge: total > 0 ? total : undefined,
             tabBarBadgeStyle: {
@@ -142,7 +144,7 @@ const TabStack: React.FC = () => {
             unmountOnBlur: true,
           }}
         />
-        <MainTabNavigator.Screen
+        {/* <MainTabNavigator.Screen
           name={TabStacks.ConnectionStack}
           component={ContactStack}
           options={{
@@ -155,6 +157,23 @@ const TabStack: React.FC = () => {
             ),
             tabBarLabel: () => (
               <TabBarLabel label={t<string>('TabStack.Connections')} />
+            ),
+            unmountOnBlur: true,
+          }}
+        /> */}
+        <MainTabNavigator.Screen
+          name={TabStacks.PresentationStack}
+          component={PresentationStack}
+          options={{
+            headerTitle: 'Presentations',
+            tabBarIcon: ({ focused }) => (
+              <TabBarIcon
+                focused={focused}
+                imageName={Images.presentation}
+              />
+            ),
+            tabBarLabel: () => (
+              <TabBarLabel label={t<string>('TabStack.Presentation')} />
             ),
             unmountOnBlur: true,
           }}
@@ -171,29 +190,32 @@ const TabStack: React.FC = () => {
           listeners={({ navigation }) => ({
             tabPress: e => {
               e.preventDefault();
-              navigation.navigate(Screens.Scan);
+              navigation.navigate(Screens.Scan, { mode: 'camera' });
+            },
+             tabLongPress: e => {
+              navigation.navigate(Screens.Scan, { mode: 'file' });
             },
           })}
         >
           {/* Just a placeholder, the the tab will navigate to a different stack */}
           {() => <View />}
         </MainTabNavigator.Screen>
-        <MainTabNavigator.Screen
-          name={TabStacks.CredentialStack}
-          component={CredentialStack}
+         <MainTabNavigator.Screen
+          name={TabStacks.OtpStack}
+          component={OtpStack}
           options={{
             tabBarIcon: ({ focused }) => (
               <TabBarIcon
                 focused={focused}
-                imageName={Images.credentialsIcon}
+                imageName={Images.otpIcon}
               />
             ),
             tabBarLabel: () => (
-              <TabBarLabel label={t<string>('TabStack.Credentials')} />
+              <TabBarLabel label={t<string>('TabStack.Otp')} />
             ),
             unmountOnBlur: true,
           }}
-        />
+        /> 
         <MainTabNavigator.Screen
           name={TabStacks.SettingsStack}
           component={SettingStack}

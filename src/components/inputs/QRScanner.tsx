@@ -37,6 +37,7 @@ interface Props {
   enableCameraOnError?: boolean;
   url?: string;
   onChangeText: (text: string) => void;
+  onLongPressScan?: () => void; 
 }
 
 const CameraViewContainer: React.FC<{

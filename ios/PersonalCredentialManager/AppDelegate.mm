@@ -9,26 +9,31 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-   self.moduleName = @"PersonalCredentialManager";
-  // You can add your custom initial props in the dictionary below.
-  // They will be passed down to the ViewController used by React Native.
-   self.initialProps = @{};
-  
+  self.moduleName = @"PersonalCredentialManager";
+  self.initialProps = @{};
+
   BOOL appLaunched = [super application:application didFinishLaunchingWithOptions:launchOptions];
-   if (!appLaunched) {
-     return NO;
-   }
-  
-  // RCTBridge *bridge = [[RCTBridge alloc] initWithDelegate:self launchOptions:launchOptions];
-  // RCTRootView *rootView = [[RCTRootView alloc] initWithBridge:bridge moduleName:@"YourApp" initialProperties:nil];
-  
-  // self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-  // UIViewController *rootViewController = [UIViewController new];
-  // rootViewController.view = rootView;
-  // self.window.rootViewController = rootViewController;
-  // [self.window makeKeyAndVisible];
+  if (!appLaunched) {
+    return NO;
+  }
+
+  // Falls dein AppDelegate nicht automatisch RootView setzt:
+  RCTBridge *bridge = [[RCTBridge alloc] initWithDelegate:self launchOptions:launchOptions];
+  RCTRootView *rootView = [[RCTRootView alloc] initWithBridge:bridge
+                                                  moduleName:self.moduleName
+                                           initialProperties:self.initialProps];
+
+  rootView.backgroundColor = [UIColor whiteColor];
+
+  self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+  UIViewController *rootViewController = [UIViewController new];
+  rootViewController.view = rootView;
+  self.window.rootViewController = rootViewController;
+  [self.window makeKeyAndVisible];
+
   return appLaunched;
 }
+
 
 - (NSURL *)sourceURLForBridge:(RCTBridge *)bridge
 {

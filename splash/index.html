@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Splashscreen Beispiel</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body, html {
+      height: 100%;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      background: white;
+      height: 12vh; /* vorher 20vh → jetzt ca. 20% kleiner */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid #ccc;
+    }
+
+    header img {
+      max-height: 80%; /* responsive skalieren */
+      max-width: 80%;
+      object-fit: contain;
+    }
+
+    main {
+      flex: 1;
+      background: linear-gradient(180deg, #6A11CB, #2575FC); /* violett → blau */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 2rem;
+      font-weight: bold;
+      text-align: center;
+      padding: 20px;
+    }
+
+    footer {
+      background: #002b80; /* tiefblau */
+      height: 15vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1rem;
+      gap: 6px;
+    }
+
+    footer img {
+      max-height: 40%;
+      max-width: 60%;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <img src="https://eclipse-xfsc.github.io/landingpage/img/xfsc_logo.svg" alt="XFSC Logo" />
+    </header>
+    <main>
+      Personal Credential Manager
+    </main>
+    <footer>
+      <span>Powered by</span>
+      <img src="https://eclipse-xfsc.github.io/landingpage/img/footer_logo.svg" alt="Eclipse Logo" />
+    </footer>
+  </div>
+</body>
+</html>

@@ -121,9 +121,9 @@ const translation = {
     LegalAndPrivacy: 'Legal & Privacy',
     ExportWallet: "Portefeuille d'exportation",
     ViewMnemonic: 'Voir Mnémonique',
-    RemoveDataTitle: 'Delete account',
-    RemoveDataButton: 'Remove All Data',
-    RemoveDataMsg: 'You are going to remove the wallet from your phone. The added connections and credentials will be removed from the app. Are you sure to continue?',
+    RemoveDataTitle: 'Supprimer le compte',
+    RemoveDataButton: 'Supprimer toutes les données',
+    RemoveDataMsg: 'Vous allez supprimer le portefeuille de votre téléphone. Les connexions et identifiants ajoutés seront supprimés de l\'application. Voulez-vous continuer ?',
   },
   ExportWallet:{
     WalletExportedPath: 'Portefeuille exporté vers le chemin :',
@@ -179,8 +179,10 @@ const translation = {
     Home: 'Maison',
     Connections: 'Connexion',
     Scan: 'Analyse',
-    Credentials: 'Identifiants',
+    Credentials: 'Portefeuille',
     Settings: 'Réglages',
+    Otp: '2FA',
+    Presentation:'Preuve'
   },
   Toasts:{
     Success: 'Succès',
@@ -274,5 +276,8 @@ const translation = {
   SearchBar: {
     placeholder: 'Rechercher'
   },
+  Otp: {
+    NoTokens: "Aucun jeton enregistré"
+  }
 };
 export default translation;

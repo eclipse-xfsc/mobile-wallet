@@ -51,13 +51,13 @@ const SettingStack: React.FC<SettingStackProp> = () => {
           title: t<string>('ScreenTitles.ViewMnemonic'),
         })}
       />
-      <Stack.Screen
+      {/* <Stack.Screen
         name={Screens.OTPGenerator}
         component={TOTPView}
         options={() => ({
           title: t<string>('ScreenTitles.OTPTokens'),
         })}
-      />
+      /> */}
       <Stack.Screen
         name={Screens.ChangePin}
         component={ChangePin}

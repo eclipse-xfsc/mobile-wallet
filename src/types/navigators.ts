@@ -34,6 +34,7 @@ export enum Screens {
   WalletInitialized = 'WalletInitialized',
   SetupDelay = 'SetupDelay',
   OTPGenerator = 'OTPGenerator',
+  Presentation = 'Proof',
 }
 
 export type OnboardingStackParams = {
@@ -77,9 +78,6 @@ export type MainStackParams = {
   [Screens.OTPGenerator]: {
     url?: string;
   };
-  [Screens.CredentialOfferOid4VC]: {
-    url: string;
-  };
 };
 
 export type AuthenticateStackParams = {
@@ -97,6 +95,10 @@ export type ContactStackParams = {
 export type CredentialStackParams = {
   [Screens.Credentials]: undefined;
   [Screens.CredentialDetails]: { credentialId: string };
+  [Screens.CredentialOfferOid4VC]: {
+    url: string;
+  };
+  [Screens.Home]: undefined; 
 };
 
 export type HomeStackParams = {
@@ -114,7 +116,6 @@ export type HomeStackParams = {
 };
 
 export type ScanStackParams = {
-  [Screens.Scan]: undefined;
   [Screens.ConnectionInvitation]: {
     connectionRecordId: string;
   };
@@ -123,9 +124,26 @@ export type ScanStackParams = {
     url?: string;
   };
   [Screens.CredentialOfferOid4VC]: {
-    url: string;
+    url?: string;
+  };
+  [Screens.Presentation]: {
+    url?: string;
+  };
+  [Screens.Scan]: { mode?: 'camera' | 'file' } | undefined;
+};
+
+export type OtpStackParams = {
+  [Screens.OTPGenerator]: {
+    url?: string;
   };
 };
+
+export type PresentationStackParams = {
+  [Screens.OTPGenerator]: {
+    url?: string;
+  };
+};
+
 
 export type SettingStackParams = {
   [Screens.Settings]: undefined;
@@ -134,9 +152,6 @@ export type SettingStackParams = {
   [Screens.ExportWallet]: undefined;
   [Screens.ViewMnemonic]: undefined;
   [Screens.LegalAndPrivacy]: undefined;
-  [Screens.OTPGenerator]: {
-    url?: string;
-  };
 };
 
 export enum TabStacks {
@@ -145,6 +160,8 @@ export enum TabStacks {
   ScanStack = 'Tab Scan Stack',
   CredentialStack = 'Tab Credential Stack',
   SettingsStack = 'Tab Settings Stack',
+  OtpStack = 'Tab Otp Stack',
+  PresentationStack="Tab Presentation"
 }
 
 export type TabStackParams = {
@@ -153,6 +170,7 @@ export type TabStackParams = {
   [TabStacks.ScanStack]: NavigatorScreenParams<ScanStackParams>;
   [TabStacks.CredentialStack]: NavigatorScreenParams<CredentialStackParams>;
   [TabStacks.SettingsStack]: NavigatorScreenParams<SettingStackParams>;
+  [TabStacks.OtpStack]: NavigatorScreenParams<ScanStackParams>;
 };
 
 export enum Stacks {

@@ -2,6 +2,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import CredentialDetails from '../screens/CredentialDetails';
+import CredentialOfferOid4VC from '../screens/CredentialOfferOid4VC';
 import ListCredentials from '../screens/ListCredentials';
 import { CredentialStackParams, Screens } from '../types/navigators';
 
@@ -18,6 +19,20 @@ const CredentialStack: React.FC = () => {
         component={ListCredentials}
         options={() => ({
           title: t<string>('ScreenTitles.Credentials'),
+        })}
+      />
+      <Stack.Screen
+        name={Screens.CredentialDetails}
+        component={CredentialDetails}
+        options={() => ({
+          title: t<string>('ScreenTitles.CredentialDetails'),
+        })}
+      />
+      <Stack.Screen
+        name={Screens.CredentialOfferOid4VC}
+        component={CredentialOfferOid4VC}
+        options={() => ({
+          title: t<string>('ScreenTitles.CredentialOffer'),
         })}
       />
     </Stack.Navigator>

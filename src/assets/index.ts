@@ -7,6 +7,7 @@ const Images = {
   credentialsIcon: require('./credentials-icon.png'),
   scanIcon: require('./scan-icon.png'),
   settingsIcon: require('./settings-icon.png'),
+  otpIcon: require('./otp-icon.png'),
   loaderIcon: require('./loader.png'),
   pinIcon: require('./pin.png'),
   biometricIcon: require('./biometric.png'),
@@ -16,6 +17,7 @@ const Images = {
   secureImage: require('./secure-image.png'),
   scanToConnectImage: require('./scan-to-connect.png'),
   credentialListImage: require('./credentials.png'),
+  presentation: require('./proof.png')
 };
 
 export default Images;

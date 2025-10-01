@@ -1,28 +1,24 @@
 import { StackScreenProps } from '@react-navigation/stack';
 import React, { useEffect } from 'react';
 import {
-  Clipboard,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
-import { MainStackParams, Screens } from '../../types/navigators';
+import { MainStackParams, OtpStackParams, Screens } from '../../types/navigators';
 import { OTPItem, useGetOtpList, useOtpGenerator } from './totpUtils';
+import { ColorPallet, TextTheme } from '../../theme/theme';
+import { useTranslation } from 'react-i18next';
 
-import { ColorPallet } from '../../theme/theme';
-import { styles } from './styles';
-
-type OTPGeneratorProps = StackScreenProps<
-  MainStackParams,
-  Screens.OTPGenerator
->;
+type OTPGeneratorProps = StackScreenProps<OtpStackParams, Screens.OTPGenerator>;
 
 type TOTPItemProps = {
   item: OTPItem;
-  removeOtpItem: (item: string) => void;
+  removeOtpItem: (id: string) => void;
 };
 
 const itemStyles = StyleSheet.create({
@@ -36,15 +32,11 @@ const itemStyles = StyleSheet.create({
     marginHorizontal: 16,
     borderRadius: 5,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.23,
     shadowRadius: 2.62,
     elevation: 4,
     justifyContent: 'center',
-    alignContent: 'center',
   },
   serviceName: {
     fontSize: 20,
@@ -52,15 +44,9 @@ const itemStyles = StyleSheet.create({
     marginBottom: 10,
     textAlign: 'center',
   },
-  otp: {
-    fontSize: 26,
-    fontWeight: '500',
-    marginBottom: 10,
-    textAlign: 'center',
-    letterSpacing: 5,
-  },
   expiresIn: {
     marginBottom: 10,
+    alignItems: 'center',
   },
   buttonsContainer: {
     flexDirection: 'row',
@@ -78,7 +64,6 @@ const itemStyles = StyleSheet.create({
     textAlign: 'center',
   },
   buttonDelete: {
-    // red hex color= #dc3545
     backgroundColor: ColorPallet.baseColors.red,
     padding: 10,
     borderRadius: 5,
@@ -86,58 +71,84 @@ const itemStyles = StyleSheet.create({
     marginHorizontal: 5,
   },
   progress: {
-    alignContent: 'center',
     alignSelf: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
+  },
+  emptyText: {
+    ...TextTheme.normal,
+    fontSize: 18,
+    color: '#999',
     textAlign: 'center',
+  },
+  otpRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  otp: {
+    fontSize: 26,
+    fontWeight: '500',
+    marginLeft: 16,   // Abstand zwischen Kreis und OTP
+    textAlign: 'center',
+    letterSpacing: 5,
   },
 });
 
 const TOTPItem: React.FC<TOTPItemProps> = ({ item, removeOtpItem }) => {
   const { label, otp, timeInfo } = useOtpGenerator(item);
 
-  const copyToClipboard = (otp: string) => {
-    Clipboard.setString(otp);
+  const copyToClipboard = (code: string) => {
+    Clipboard.setString(code);
   };
+
   return (
-    <View key={label} style={itemStyles.serviceItem}>
+    <View style={itemStyles.serviceItem}>
       <Text style={itemStyles.serviceName}>{label}</Text>
-      <Text style={itemStyles.otp}>{otp.otp}</Text>
-      <View style={itemStyles.expiresIn}>
+
+      {/* OTP + Timer nebeneinander */}
+      <View style={itemStyles.otpRow}>
         <AnimatedCircularProgress
           size={50}
-          width={8}
+          width={6}
           duration={1000}
           fill={timeInfo.progress}
-          tintColor="#ffffff"
-          backgroundColor="#5892ef"
-          padding={10}
-          style={itemStyles.progress}
+          tintColor={ColorPallet.baseColors.lightBlue}
+          backgroundColor="#eee"
         >
-          {() => <Text>{timeInfo.remainingTime}</Text>}
+          {() => <Text>{timeInfo.remainingTime}s</Text>}
         </AnimatedCircularProgress>
+
+        <Text style={itemStyles.otp}>{otp}</Text>
       </View>
+
       <View style={itemStyles.buttonsContainer}>
         <TouchableOpacity
           style={itemStyles.button}
-          onPress={() => copyToClipboard(otp.otp)}
+          onPress={() => copyToClipboard(otp)}
         >
-          <Text style={itemStyles.buttonText}>Copy OTP</Text>
+          <Text style={itemStyles.buttonText}>Copy</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={itemStyles.buttonDelete}
           onPress={() => removeOtpItem(label)}
         >
-          <Text style={itemStyles.buttonText}>Delete Issuer</Text>
+          <Text style={itemStyles.buttonText}>Delete</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
 
-const TOTPView: React.FC<OTPGeneratorProps> = ({ route }) => {
-  const { url } = route.params;
 
+const TOTPView: React.FC<OTPGeneratorProps> = ({ route }) => {
+  const { t } = useTranslation();
+  const { url } = route.params ?? {};
   const { otpList, addOtpItem, removeOtpItem } = useGetOtpList();
 
   useEffect(() => {
@@ -147,14 +158,16 @@ const TOTPView: React.FC<OTPGeneratorProps> = ({ route }) => {
   }, [url]);
 
   return (
-    <ScrollView style={styles.container}>
-      {otpList.map((item, index) => (
-        <TOTPItem
-          key={index.toString()}
-          item={item}
-          removeOtpItem={removeOtpItem}
-        />
-      ))}
+    <ScrollView style={itemStyles.container} contentContainerStyle={{ flexGrow: 1 }}>
+      {otpList.length > 0 ? (
+        otpList.map((item, index) => (
+          <TOTPItem key={index.toString()} item={item} removeOtpItem={removeOtpItem} />
+        ))
+      ) : (
+        <View style={itemStyles.emptyContainer}>
+          <Text style={itemStyles.emptyText}>{t('Otp.NoTokens')}</Text>
+        </View>
+      )}
     </ScrollView>
   );
 };

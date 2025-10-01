@@ -180,8 +180,10 @@ const translation = {
     Home: 'Home',
     Connections: 'Connection',
     Scan: 'Scan',
-    Credentials: 'Credential',
+    Credentials: 'Wallet',
     Settings: 'Settings',
+    Otp: '2FA',
+    Presentation:'Proofs'
   },
   Toasts:{
     Success: 'Success',
@@ -276,5 +278,8 @@ const translation = {
   SearchBar: {
     placeholder: 'Search',
   },
+  Otp: {
+    NoTokens: "No Token registered"
+  }
 };
 export default translation;

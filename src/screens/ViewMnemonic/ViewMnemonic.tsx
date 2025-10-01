@@ -1,7 +1,15 @@
+console.log(">>> ViewMnemonic.tsx wurde geladen <<<");
 import Clipboard from '@react-native-clipboard/clipboard';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Keyboard, StyleSheet, Text, View } from 'react-native';
+import {
+  Keyboard,
+  StyleSheet,
+  Text,
+  View,
+  Share,
+  TouchableOpacity,
+} from 'react-native';
 import { UserCredentials } from 'react-native-keychain';
 import { TextInput } from '../../components';
 import Button, { ButtonType } from '../../components/button/Button';
@@ -66,8 +74,18 @@ const ViewMnemonic: React.FC = () => {
     Clipboard.setString(mnemonicText);
   };
 
+  const shareMnemonic = async () => {
+    try {
+      await Share.share({
+        message: mnemonicText,
+      });
+    } catch (error) {
+      warningToast(t<string>('Global.ShareError'));
+    }
+  };
+
   return (
-    <View style={[style.container]}>
+    <View style={style.container}>
       {!showMnemonicView && (
         <>
           <TextInput
@@ -101,16 +119,21 @@ const ViewMnemonic: React.FC = () => {
       {showMnemonicView && (
         <>
           <Text style={style.label}>Mnemonic</Text>
-          <View style={style.boxContainer}>
-            <Text style={style.headerText}>{mnemonicText}</Text>
-            <Text style={style.bodyText}>
-              {t<string>('Registration.MnemonicMsg')}
-            </Text>
-            <Button
-              title={t<string>('Global.Copy')}
-              buttonType={ButtonType.Primary}
-              onPress={copyMnemonic}
-            />
+          <View style={style.mnemonicBox}>
+            <Text style={style.mnemonicText}>{mnemonicText}</Text>
+          </View>
+          <Text style={style.bodyText}>
+            {t<string>('Registration.MnemonicMsg')}
+          </Text>
+
+          <View style={style.buttonRow}>
+            <View>
+              <Button
+                title={t<string>('Global.Share')}
+                buttonType={ButtonType.Primary}
+                onPress={shareMnemonic}
+              />
+            </View>
           </View>
         </>
       )}
@@ -124,36 +147,39 @@ const style = StyleSheet.create({
   container: {
     backgroundColor: ColorPallet.grayscale.white,
     margin: 20,
+    flex: 1,
   },
   bodyText: {
     ...TextTheme.normal,
     flexShrink: 1,
-  },
-  verticalSpacer: {
-    marginVertical: 20,
-    textAlign: 'center',
-  },
-  subContainer: {
-    backgroundColor: ColorPallet.grayscale.white,
-    flex: 1,
-    margin: 20,
-  },
-  boxContainer: {
-    backgroundColor: ColorPallet.notification.info,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: ColorPallet.notification.infoBorder,
-    padding: 10,
-    marginTop: 10,
     marginBottom: 20,
+    marginTop: 10,
   },
   label: {
     ...TextTheme.normal,
     fontWeight: 'bold',
+    marginBottom: 8,
   },
-  headerText: {
+  mnemonicBox: {
+    backgroundColor: ColorPallet.baseColors.lightGrey,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    marginBottom: 12,
+  },
+  mnemonicText: {
     ...TextTheme.normal,
-    color: ColorPallet.notification.infoText,
-    flexShrink: 1,
+    fontSize: 16,
+    lineHeight: 22,
+    textAlign: 'center',
+    color: ColorPallet.grayscale.black,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
   },
 });

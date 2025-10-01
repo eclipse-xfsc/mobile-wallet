@@ -126,11 +126,14 @@ export default PinEnter;
 
 const style = StyleSheet.create({
   container: {
+    flex: 1, // nimmt den ganzen Bildschirm ein
     backgroundColor: ColorPallet.grayscale.white,
     margin: 20,
+    justifyContent: 'center', // vertikal zentrieren
+    alignItems: 'center', // horizontal zentrieren
   },
   bodyText: {
-    ...TextTheme.normal,
+    ...TextTheme.caption,
     flexShrink: 1,
   },
   verticalSpacer: {

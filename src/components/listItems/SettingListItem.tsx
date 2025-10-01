@@ -17,7 +17,6 @@ const SettingListItem: React.FC<Props> = ({ title, onPress }) => {
       onPress={onPress}
     >
       <Text style={styles.bodyText}>{title}</Text>
-      <Icon name="chevron-right" size={25} color={ColorPallet.brand.primary} />
     </TouchableOpacity>
   );
 };
@@ -30,12 +29,13 @@ const styles = StyleSheet.create({
     backgroundColor: ColorPallet.baseColors.lightBlue,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
+    justifyContent: 'center',
+    padding: 1,
     marginBottom: 10,
+    minHeight: 35
   },
   bodyText: {
-    ...TextTheme.normal,
+    ...TextTheme.label,
     flexShrink: 1,
   },
 });

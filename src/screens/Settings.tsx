@@ -72,7 +72,7 @@ const Settings: React.FC<SettingsProps> = ({
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       <Loader loading={loading} />
       <Text style={styles.groupHeader}>
         {t<string>('Settings.AppPreferences')}
@@ -93,14 +93,14 @@ const Settings: React.FC<SettingsProps> = ({
         title={t<string>('Settings.ExportWallet')}
         onPress={() => navigation.navigate(Screens.ExportWallet)}
       />
-      <SettingListItem
+      {/* <SettingListItem
         title={t<string>('Settings.LoginToken')}
         onPress={() =>
           navigation.navigate(Screens.OTPGenerator, {
             url: undefined,
           })
         }
-      />
+      /> */}
       <SettingListItem
         title={t<string>('Settings.LegalAndPrivacy')}
         onPress={() => navigation.navigate(Screens.LegalAndPrivacy)}
@@ -123,7 +123,7 @@ const Settings: React.FC<SettingsProps> = ({
           {t<string>('Settings.RemoveDataButton')}
         </Text>
       </TouchableOpacity>
-    </ScrollView>
+    </View>
   );
 };
 
