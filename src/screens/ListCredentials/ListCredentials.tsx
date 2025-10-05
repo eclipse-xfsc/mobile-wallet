@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useCallback, useState, useMemo } from 'react'
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   FlatList,
 } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useFocusEffect } from '@react-navigation/native'
 import { useCredentialsForDisplay } from '../../agent/hooks'
 import CredentialCard from '../../components/misc/CredentialCard'
 import SearchBar from '../../components/inputs/SearchBar'
@@ -19,7 +19,7 @@ import { ColorPallet } from '../../theme/theme'
 const { width } = Dimensions.get('window')
 const CARD_WIDTH = width * 0.9
 const CARD_HEIGHT = CARD_WIDTH * 0.6
-const CARD_OVERLAP = 150 // dichterer Stack
+const CARD_OFFSET = 550 // Abstand zwischen Karten
 
 const ListCredentials: React.FC = () => {
   const { t } = useTranslation()
@@ -28,6 +28,14 @@ const ListCredentials: React.FC = () => {
 
   const [searchPhrase, setSearchPhrase] = useState('')
   const [clicked, setClicked] = useState(false)
+
+  useFocusEffect(
+  useCallback(() => {
+    console.log('🔄 Screen refocused → Credentials refreshed')
+    // Dieser State-Change triggert einen Re-Render und aktualisiert Hooks
+    setClicked(false)
+  }, [])
+)
 
   const animatedScales = useMemo(
     () =>
@@ -54,8 +62,8 @@ const ListCredentials: React.FC = () => {
     const scale = animatedScales[id]
 
     Animated.sequence([
-      Animated.spring(scale, { toValue: 1.08, useNativeDriver: true }),
-      Animated.spring(scale, { toValue: 1, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1.3, speed: 100, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, speed: 500, useNativeDriver: true }),
     ]).start(() => {
       navigation.navigate(Screens.CredentialDetails as never, {
         credentialId: id,
@@ -66,15 +74,14 @@ const ListCredentials: React.FC = () => {
   const renderCard = ({ item, index }: { item: any; index: number }) => {
     const tags = item.tags || {}
     const scale = animatedScales[item.id] || new Animated.Value(1)
-    const isTopCard = index === filteredCredentials.length - 1
 
     return (
       <View
         key={item.id}
-        pointerEvents={isTopCard ? 'auto' : 'none'} // nur oberste Karte klickbar
         style={[
           styles.cardWrapper,
-          index > 0 && { marginTop: -CARD_OVERLAP },
+          { marginTop: index === 0 ? 0 : -CARD_OFFSET * 0.3 }, // leicht überlappend
+          { zIndex: filteredCredentials.length - index },
         ]}
       >
         <Pressable

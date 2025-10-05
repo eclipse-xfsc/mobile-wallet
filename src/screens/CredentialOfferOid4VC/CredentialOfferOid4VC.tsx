@@ -219,7 +219,7 @@ const CredentialOfferOid4VC: React.FC<CredentialOffer4VciProps> = ({
         // ---------- SD-JWT ----------
         const record: SdJwtVcRecord = await agent.sdJwtVc.store(credential.compact)
         const repository = agent.dependencyManager.resolve(SdJwtVcRepository)
-
+        
         const offeredConfig =
           resolvedOffer.offeredCredentialConfigurations?.[credential.id]
         const displayConfig = offeredConfig?.display?.[0]

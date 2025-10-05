@@ -10,6 +10,7 @@ import {
 } from '@credo-ts/anoncreds'
 import { OpenId4VcHolderModule } from '@credo-ts/openid4vc'
 import { AskarModule } from '@credo-ts/askar'
+import { SdJwtVcModule } from '@credo-ts/sd-jwt-vc'
 import {
   ConnectionsModule,
   CredentialsModule,
