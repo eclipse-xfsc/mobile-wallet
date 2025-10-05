@@ -141,8 +141,7 @@ const Scan: React.FC<ScanProps> = ({ navigation,route }) => {
 
   return (
       <View style={styles.container}>
-        {isFocused && (
-          mode === 'camera' ? (
+          {isFocused && mode === 'camera' && (
             <QRScanner
               handleCodeScan={(url) => processUrl(url)}
               error={qrCodeScanError}
@@ -150,15 +149,16 @@ const Scan: React.FC<ScanProps> = ({ navigation,route }) => {
               onChangeText={setUrl}
               textInputSubmit={() => processUrl(urlInput)}
             />
-          ) : (
+          )}
+
+          {isFocused && mode !== 'camera' && (
             <View style={styles.container}>
               <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <Button title="Bild aus Galerie wählen" onPress={pickImageAndScan} />
               </View>
             </View>
-          )
-        )}
-      </View>
+          )}
+        </View>
     );
 };
 

@@ -26,16 +26,15 @@ const Button: React.FC<ButtonProps> = ({
 }) => {
   return (
     <AntButton
-      testID="button"
-      accessibilityLabel={title}
       type={buttonType}
       style={buttonStyle}
       disabled={disabled}
       onPress={onPress}
+      activeStyle={{ opacity: 0.7 }}   // 👈 macht Touch zuverlässig klickbar
     >
       {title}
     </AntButton>
-  );
-};
+  )
+}
 
 export default Button;

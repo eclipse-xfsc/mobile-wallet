@@ -27,7 +27,7 @@ type JffW3cCredentialJson = W3cCredentialJson & {
 }
 
 export interface DisplayImage {
-  url?: string
+  uri?: string
   altText?: string
 }
 

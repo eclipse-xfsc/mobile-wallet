@@ -7,13 +7,15 @@ import {
   Text,
   View,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native'
 import Toast from 'react-native-toast-message'
+import RNFS from 'react-native-fs'
+import ImageResizer from 'react-native-image-resizer'
 import CredentialDeclined from '../../assets/img/credential-declined.svg'
 import CredentialPending from '../../assets/img/credential-pending.svg'
 import CredentialSuccess from '../../assets/img/credential-success.svg'
 import Button, { ButtonType } from '../../components/button/Button'
-import FlowDetailModal from '../../components/modals/FlowDetailModal'
 import { ToastType } from '../../components/toast/BaseToast'
 import { ColorPallet, TextTheme } from '../../theme/theme'
 import {
@@ -26,6 +28,8 @@ import {
   KeyDidCreateOptions,
   JwaSignatureAlgorithm,
   getJwkFromKey,
+  W3cCredentialRepository,
+  SdJwtVcRepository,
   W3cCredentialRecord,
   SdJwtVcRecord,
 } from '@credo-ts/core'
@@ -35,8 +39,9 @@ import {
 } from '@credo-ts/openid4vc'
 import { useAppAgent } from '../../hooks/useInitAgent'
 import CredentialCard from '../../components/misc/CredentialCard'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
-const { width, height } = Dimensions.get('window')
+const { width } = Dimensions.get('window')
 
 type CredentialOffer4VciProps = StackScreenProps<
   CredentialStackParams,
@@ -51,18 +56,21 @@ const CredentialOfferOid4VC: React.FC<CredentialOffer4VciProps> = ({
   if (!route?.params) {
     throw new Error(t<string>('CredentialOffer.CredentialOfferParamsError'))
   }
+
   const { url } = route.params
   const { agent } = useAppAgent()
+
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [resolvedOffer, setResolvedOffer] =
+    useState<OpenId4VciResolvedCredentialOffer>()
 
   const [buttonsVisible, setButtonsVisible] = useState(true)
   const [pendingModalVisible, setPendingModalVisible] = useState(false)
   const [successModalVisible, setSuccessModalVisible] = useState(false)
   const [declinedModalVisible, setDeclinedModalVisible] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
-  const [resolvedOffer, setResolvedOffer] =
-    useState<OpenId4VciResolvedCredentialOffer>()
-
+  // ---------- Load Offer ----------
   useEffect(() => {
     void (async () => {
       try {
@@ -72,237 +80,413 @@ const CredentialOfferOid4VC: React.FC<CredentialOffer4VciProps> = ({
       } catch (e: unknown) {
         console.error('Resolve error', e)
         setError(t<string>('CredentialOffer.CredentialNotAvailable'))
+      } finally {
+        setLoading(false)
       }
     })()
   }, [url, agent, t])
 
+  // ---------- Accept ----------
   const handleAcceptPress = async () => {
-    try {
-      if (!resolvedOffer) throw new Error('No resolved offer')
+      try {
+        if (!resolvedOffer) throw new Error('No resolved offer')
+        console.log('Hide Buttons and show Pending')
+        setButtonsVisible(false)
+        setPendingModalVisible(true)
 
-      setButtonsVisible(false)
-      setPendingModalVisible(true)
+        // Kleine Pause, um Modal anzuzeigen
+        await new Promise((resolve) => setTimeout(resolve, 100))
 
-      const credentials =
-        await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
-          resolvedOffer,
-          {
-            credentialBindingResolver: async ({
-              supportedDidMethods,
-              keyType,
-              supportsAllDidMethods,
-              supportsJwk,
-              credentialFormat,
-            }: {
-              supportedDidMethods: string[]
-              keyType: any
-              supportsAllDidMethods: boolean
-              supportsJwk: boolean
-              credentialFormat: string
-            }) => {
-              if (
-                supportsAllDidMethods ||
-                supportedDidMethods?.includes('did:key')
-              ) {
-                const didResult = await agent.dids.create<KeyDidCreateOptions>({
-                  method: 'key',
-                  options: { keyType },
-                })
-
-                if (didResult.didState.state !== 'finished') {
-                  throw new Error('DID creation failed.')
+        const credentials =
+          await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
+            resolvedOffer,
+            {
+              credentialBindingResolver: async ({
+                supportedDidMethods,
+                keyType,
+                supportsAllDidMethods,
+                supportsJwk,
+                credentialFormat,
+              }) => {
+                if (
+                  supportsAllDidMethods ||
+                  supportedDidMethods?.includes('did:key')
+                ) {
+                  const didResult = await agent.dids.create<KeyDidCreateOptions>({
+                    method: 'key',
+                    options: { keyType },
+                  })
+                  if (didResult.didState.state !== 'finished') {
+                    throw new Error('DID creation failed.')
+                  }
+                  const didKey = DidKey.fromDid(didResult.didState.did)
+                  return {
+                    method: 'did',
+                    didUrl: `${didKey.did}#${didKey.key.fingerprint}`,
+                  }
                 }
 
-                const didKey = DidKey.fromDid(didResult.didState.did)
-                return {
-                  method: 'did',
-                  didUrl: `${didKey.did}#${didKey.key.fingerprint}`,
+                if (
+                  supportsJwk &&
+                  credentialFormat === OpenId4VciCredentialFormatProfile.SdJwtVc
+                ) {
+                  const key = await agent.wallet.createKey({ keyType })
+                  return { method: 'jwk', jwk: getJwkFromKey(key) }
                 }
-              }
 
-              if (
-                supportsJwk &&
-                credentialFormat === OpenId4VciCredentialFormatProfile.SdJwtVc
-              ) {
-                const key = await agent.wallet.createKey({ keyType })
-                return { method: 'jwk', jwk: getJwkFromKey(key) }
-              }
+                throw new Error('Unable to create a key binding')
+              },
+              verifyCredentialStatus: false,
+              allowedProofOfPossessionSignatureAlgorithms: [
+                JwaSignatureAlgorithm.EdDSA,
+                JwaSignatureAlgorithm.ES256,
+              ],
+            }
+          )
 
-              throw new Error('Unable to create a key binding')
+        for (const credential of credentials) {
+        // ---------- W3C ----------
+        if (!('compact' in credential)) {
+          const record: W3cCredentialRecord = await agent.w3cCredentials.storeCredential({ credential })
+          const repository = agent.dependencyManager.resolve(W3cCredentialRepository)
+
+          const offeredConfig =
+            resolvedOffer.offeredCredentialConfigurations?.[credential.id]
+          const displayConfig = offeredConfig?.display?.[0]
+          const issuerDisplay =
+            resolvedOffer.metadata?.credentialIssuerMetadata?.display?.[0]
+
+          const displayData: any = {
+            name: displayConfig?.name || credential.id,
+            description: displayConfig?.description,
+            issuer: {
+              name:
+                issuerDisplay?.name ||
+                resolvedOffer.metadata?.issuer ||
+                'Unknown',
+              logo: issuerDisplay?.logo
+                ? { uri: issuerDisplay.logo.uri || issuerDisplay.logo.url }
+                : undefined,
             },
-            verifyCredentialStatus: false,
-            allowedProofOfPossessionSignatureAlgorithms: [
-              JwaSignatureAlgorithm.EdDSA,
-              JwaSignatureAlgorithm.ES256,
-            ],
+            background_image: displayConfig?.background_image
+              ? {
+                  uri:
+                    displayConfig.background_image.uri ||
+                    displayConfig.background_image.url,
+                }
+              : undefined,
+            background_color: displayConfig?.background_color,
+            text_color: displayConfig?.text_color,
           }
-        )
 
-      // Store the received credentials
-      const records: Array<W3cCredentialRecord | SdJwtVcRecord> = []
-      for (const credential of credentials) {
-        if ('compact' in credential) {
-          const record = await agent.sdJwtVc.store(credential.compact)
-          records.push(record)
-        } else {
-          const record = await agent.w3cCredentials.storeCredential({
-            credential,
-          })
-          records.push(record)
+          // ---------- Lade Hintergrundbild & speichere lokal ----------
+          let localUri = ''
+          if (displayData.background_image?.uri) {
+            try {
+              const localPath = `${RNFS.DocumentDirectoryPath}/bg-${record.id}.jpg`
+              await RNFS.downloadFile({
+                fromUrl: displayData.background_image.uri,
+                toFile: localPath,
+              }).promise
+
+              const resized = await ImageResizer.createResizedImage(
+                `file://${localPath}`,
+                1200,
+                800,
+                'JPEG',
+                80
+              )
+
+              localUri = resized.uri
+            } catch (err) {
+              console.warn('⚠️ Background image download failed:', err)
+            }
+          }
+
+          // ---------- Tags speichern ----------
+          record.setTag('displayName', displayData.name || '')
+          record.setTag('displayIssuer', displayData.issuer.name || '')
+          record.setTag('displayDescription', displayData.description || '')
+          record.setTag('backgroundImage', localUri || '')
+          record.setTag('backgroundColor', displayData.background_color || '')
+          record.setTag('textColor', displayData.text_color || '')
+
+          // ---------- Record speichern ----------
+          await repository.update(agent.context, record)
+          continue
         }
+
+        // ---------- SD-JWT ----------
+        const record: SdJwtVcRecord = await agent.sdJwtVc.store(credential.compact)
+        const repository = agent.dependencyManager.resolve(SdJwtVcRepository)
+
+        const offeredConfig =
+          resolvedOffer.offeredCredentialConfigurations?.[credential.id]
+        const displayConfig = offeredConfig?.display?.[0]
+        const issuerDisplay =
+          resolvedOffer.metadata?.credentialIssuerMetadata?.display?.[0]
+
+        const displayData: any = {
+          name: displayConfig?.name || credential.id,
+          description: displayConfig?.description,
+          issuer: {
+            name:
+              issuerDisplay?.name ||
+              resolvedOffer.metadata?.issuer ||
+              'Unknown',
+            logo: issuerDisplay?.logo
+              ? { uri: issuerDisplay.logo.uri || issuerDisplay.logo.url }
+              : undefined,
+          },
+          background_image: displayConfig?.background_image
+            ? {
+                uri:
+                  displayConfig.background_image.uri ||
+                  displayConfig.background_image.url,
+              }
+            : undefined,
+          background_color: displayConfig?.background_color,
+          text_color: displayConfig?.text_color,
+        }
+
+        // ---------- Lade Hintergrundbild & speichere lokal ----------
+        let localUri = ''
+        if (displayData.background_image?.uri) {
+          try {
+            const localPath = `${RNFS.DocumentDirectoryPath}/bg-${record.id}.jpg`
+            await RNFS.downloadFile({
+              fromUrl: displayData.background_image.uri,
+              toFile: localPath,
+            }).promise
+
+            const resized = await ImageResizer.createResizedImage(
+              `file://${localPath}`,
+              1200,
+              800,
+              'JPEG',
+              80
+            )
+
+            localUri = resized.uri
+          } catch (err) {
+            console.warn('⚠️ Background image download failed:', err)
+          }
+        }
+
+        // ---------- Tags speichern ----------
+        record.setTag('displayName', displayData.name || '')
+        record.setTag('displayIssuer', displayData.issuer.name || '')
+        record.setTag('displayDescription', displayData.description || '')
+        record.setTag('backgroundImage', localUri || '')
+        record.setTag('backgroundColor', displayData.background_color || '')
+        record.setTag('textColor', displayData.text_color || '')
+
+        // ---------- Record speichern ----------
+        await repository.update(agent.context, record)
       }
 
-      setPendingModalVisible(false)
-      setSuccessModalVisible(true)
-    } catch (error: unknown) {
-      console.error(error)
-      setButtonsVisible(true)
-      setPendingModalVisible(false)
-      Toast.show({
-        type: ToastType.Error,
-        text1: 'OID Credential Error',
-        text2: 'credential could not be received',
-      })
+
+        // ---------- UI / Navigation ----------
+        setPendingModalVisible(false)
+        setSuccessModalVisible(true)
+
+        setTimeout(() => {
+          setSuccessModalVisible(false)
+          navigation.popToTop()
+          navigation.getParent()?.navigate(TabStacks.CredentialStack, {
+            screen: Screens.Credentials,
+          })
+        }, 1500)
+      } catch (error: unknown) {
+        console.error(error)
+        setButtonsVisible(true)
+        setPendingModalVisible(false)
+        Toast.show({
+          type: ToastType.Error,
+          text1: 'OID Credential Error',
+          text2: 'credential could not be received',
+        })
+      }
     }
+
+
+  // ---------- Decline ----------
+  const handleDeclinePress = () => setDeclinedModalVisible(true)
+
+  // ---------- Render ----------
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={ColorPallet.brand.primary} />
+        <Text>{t<string>('Global.Loading')}...</Text>
+      </View>
+    )
   }
 
-  const handleDeclinePress = async () => {
-    setDeclinedModalVisible(true)
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <Text style={{ color: 'red', marginBottom: 20 }}>{error}</Text>
+        <Button
+          title="OK"
+          onPress={() => navigation.pop()}
+          buttonType={ButtonType.Primary}
+        />
+      </View>
+    )
   }
+
+  const CARD_MAX_HEIGHT = 260
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       {/* Header */}
       <View style={styles.headerTextContainer}>
         <Text style={styles.headerText}>
           <Text style={styles.title}>
-            {resolvedOffer?.metadata.issuer ||
-              t<string>('ContactDetails.AContact')}
+            {resolvedOffer?.metadata.credentialIssuerMetadata.display?.[0]
+              .name || t<string>('ContactDetails.AContact')}
           </Text>{' '}
           {t<string>('CredentialOffer.IsOfferingYouACredential')}
         </Text>
       </View>
 
-      {/* Content */}
-      {error ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: 'red', marginBottom: 20, textAlign: 'center' }}>
-            {error}
-          </Text>
-          <Button
-            title="OK"
-            onPress={() => navigation.pop()}
-            buttonType={ButtonType.Primary}
-          />
-        </View>
-      ) : (
-        <>
-          {/* Credential Cards */}
-          {resolvedOffer && (
-            <View style={{ height: height * 0.6 }}>
-              <FlatList
-                data={resolvedOffer.offeredCredentials}
-                keyExtractor={(item, idx) => `${item.id}-${idx}`}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                snapToAlignment="center"
-                decelerationRate="fast"
-                contentContainerStyle={{
+      {/* Credential Cards */}
+      {resolvedOffer?.offeredCredentials?.length ? (
+        <FlatList
+          data={resolvedOffer.offeredCredentials}
+          keyExtractor={(item, idx) => `${item.id}-${idx}`}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingVertical: 20 }}
+          renderItem={({ item }) => {
+            const config =
+              resolvedOffer.metadata.credentialIssuerMetadata
+                .credential_configurations_supported[item.id]
+            const display = (config as any)?.display?.[0]
+            const cardWidth = width * 0.9
+            const cardHeight = Math.min(cardWidth * (9 / 16), CARD_MAX_HEIGHT)
+            return (
+              <View
+                style={{
+                  width: cardWidth,
+                  height: cardHeight,
                   alignItems: 'center',
                   justifyContent: 'center',
+                  marginHorizontal: width * 0.05,
                 }}
-                renderItem={({ item }) => {
-                  const config =
-                    resolvedOffer.offeredCredentialConfigurations[item.id]
-                  const display = (config as any)?.display?.[0]
-
-                  return (
-                    <View
-                      style={{
-                        width: width * 0.9,
-                        height: height * 0.55,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <CredentialCard
-                        credential={config.vct}
-                        name={display?.name}
-                        issuerName={resolvedOffer.metadata.issuer}
-                        title={display?.name || item.id}
-                        backgroundColor={display?.background_color || '#fff'}
-                        textColor={display?.text_color || '#000'}
-                        logo={display?.logo?.uri}
-                        style={{ flex: 1, borderRadius: 16, overflow: 'hidden' }}
-                      />
-                    </View>
-                  )
-                }}
-              />
-            </View>
-          )}
-
-          {/* Footer Buttons */}
-          <View style={{ padding: 20 }}>
-            <Button
-              title={t<string>('Global.Accept')}
-              onPress={handleAcceptPress}
-              disabled={!buttonsVisible}
-              buttonType={ButtonType.Primary}
-            />
-            <View style={{ height: 10 }} />
-            <Button
-              title={t<string>('Global.Decline')}
-              onPress={handleDeclinePress}
-              disabled={!buttonsVisible}
-              buttonType={ButtonType.Ghost}
-            />
-          </View>
-        </>
+              >
+                <CredentialCard
+                  credential={config?.vct || item.vct}
+                  name={display?.name}
+                  issuerName={
+                    resolvedOffer?.metadata.credentialIssuerMetadata.display?.[0]
+                      .name as string
+                  }
+                  description={display?.description}
+                  backgroundColor={display?.background_color || '#fff'}
+                  textColor={display?.text_color || '#000'}
+                  backgroundImage={
+                    display?.background_image
+                      ? {
+                          uri:
+                            display.background_image.uri ||
+                            display.background_image.url,
+                        }
+                      : display?.logo
+                      ? { uri: display.logo.uri || display.logo.url }
+                      : undefined
+                  }
+                  logo={
+                    display?.logo
+                      ? { uri: display.logo.uri || display.logo.url }
+                      : undefined
+                  }
+                  style={{ borderRadius: 16, overflow: 'hidden' }}
+                />
+              </View>
+            )
+          }}
+        />
+      ) : (
+        <View style={styles.centered}>
+          <Text style={{ color: 'gray' }}>
+            {t<string>('CredentialOffer.NoCredentials')}
+          </Text>
+        </View>
       )}
 
-      {/* Modals */}
-      <FlowDetailModal
-        title={t<string>('CredentialOffer.CredentialOnTheWay')}
-        doneTitle={t<string>('Global.Cancel')}
-        visible={pendingModalVisible}
-        onDone={() => {}}
-      >
-        <CredentialPending style={{ marginVertical: 20 }} />
-      </FlowDetailModal>
+      {/* Footer Buttons */}
+      <View style={{ padding: 20 }}>
+        <Button
+          title={t<string>('Global.Accept')}
+          onPress={handleAcceptPress}
+          disabled={!buttonsVisible}
+          buttonType={ButtonType.Primary}
+        />
+        <View style={{ height: 10 }} />
+        <Button
+          title={t<string>('Global.Decline')}
+          onPress={handleDeclinePress}
+          disabled={!buttonsVisible}
+          buttonType={ButtonType.Ghost}
+        />
+      </View>
 
-      <FlowDetailModal
-        title={t<string>('CredentialOffer.CredentialAddedToYourWallet')}
-        visible={successModalVisible}
-        onDone={() => {
-          setSuccessModalVisible(false)
-          navigation.pop()
-          navigation.getParent()?.navigate(TabStacks.CredentialStack, {
-            screen: Screens.Credentials,
-          })
-        }}
-      >
-        <CredentialSuccess style={{ marginVertical: 20 }} />
-      </FlowDetailModal>
+      {/* ---------- Modals ---------- */}
+      {pendingModalVisible && (
+        <View style={styles.overlay}>
+          <View style={styles.modalBox}>
+            <CredentialPending width={96} height={96} />
+            <Text style={styles.modalText}>
+              {t<string>('CredentialOffer.CredentialOnTheWay') ||
+                'Credential is being processed...'}
+            </Text>
+          </View>
+        </View>
+      )}
 
-      <FlowDetailModal
-        title={t<string>('CredentialOffer.CredentialDeclined')}
-        visible={declinedModalVisible}
-        onDone={() => {
-          setDeclinedModalVisible(false)
-          navigation.pop()
-          navigation.navigate(Screens.Home)
-        }}
-      >
-        <CredentialDeclined style={{ marginVertical: 20 }} />
-      </FlowDetailModal>
-    </View>
+      {successModalVisible && (
+        <View style={styles.overlay}>
+          <View style={styles.modalBox}>
+            <CredentialSuccess width={96} height={96} />
+            <Text style={styles.modalText}>
+              {t<string>('CredentialOffer.CredentialAddedToYourWallet') ||
+                'Credential added successfully!'}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {declinedModalVisible && (
+        <View style={styles.overlay}>
+          <View style={styles.modalBox}>
+            <CredentialDeclined width={96} height={96} />
+            <Text style={styles.modalText}>
+              {t<string>('CredentialOffer.CredentialDeclined') ||
+                'Credential offer declined'}
+            </Text>
+            <View style={{ marginTop: 16 }}>
+              <Button
+                title="OK"
+                onPress={() => {
+                  setDeclinedModalVisible(false)
+                  navigation.popToTop()
+                }}
+                buttonType={ButtonType.Primary}
+              />
+            </View>
+          </View>
+        </View>
+      )}
+    </SafeAreaView>
   )
 }
 
 export default CredentialOfferOid4VC
 
+// ---------- Styles ----------
 const styles = StyleSheet.create({
   headerTextContainer: {
     paddingHorizontal: 25,
@@ -317,5 +501,37 @@ const styles = StyleSheet.create({
   title: {
     fontWeight: '600',
     fontSize: 18,
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 99,
+  },
+  modalBox: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '80%',
+    maxWidth: 320,
+  },
+  modalText: {
+    textAlign: 'center',
+    marginTop: 16,
+    fontSize: 16,
+    color: '#333',
   },
 })

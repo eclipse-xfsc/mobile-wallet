@@ -1,177 +1,187 @@
+import React, { useState, useMemo } from 'react'
 import {
-  CredentialExchangeRecord,
-  CredentialState,
-} from '@credo-ts/core';
-import { useCredentialsForDisplay } from '../../agent/hooks';
-import React, { useCallback, useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Platform, FlatList, StyleSheet, Text, View } from 'react-native';
-import SearchBar from '../../components/inputs/SearchBar';
-import CredentialListItem from '../../components/listItems/CredentialListItem';
-import { ColorPallet, TextTheme } from '../../theme/theme';
-import { useAgent, useCredentialById } from '@credo-ts/react-hooks';
-import Accordion from '../../components/accordion/Accordion';
-import CredentialCard from '../../components/misc/CredentialCard';
-import { CredentialStackParams, Screens } from '../../types/navigators';
-import { RecordHistory } from '../../types/record';
-import { credentialDefinition } from '../../utils/helpers';
-import { errorToast, warningToast } from '../../utils/toast';
-import DetailedCredentialCard from '../../components/misc/DetailedCredentialCard';
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  Dimensions,
+  Pressable,
+  FlatList,
+} from 'react-native'
+import { useTranslation } from 'react-i18next'
+import { useNavigation } from '@react-navigation/native'
+import { useCredentialsForDisplay } from '../../agent/hooks'
+import CredentialCard from '../../components/misc/CredentialCard'
+import SearchBar from '../../components/inputs/SearchBar'
+import { Screens } from '../../types/navigators'
+import { ColorPallet } from '../../theme/theme'
+
+const { width } = Dimensions.get('window')
+const CARD_WIDTH = width * 0.9
+const CARD_HEIGHT = CARD_WIDTH * 0.6
+const CARD_OVERLAP = 150 // dichterer Stack
 
 const ListCredentials: React.FC = () => {
-  const credentialStorage = useCredentialsForDisplay();
+  const { t } = useTranslation()
+  const navigation = useNavigation()
+  const { credentials } = useCredentialsForDisplay()
 
-  const { t } = useTranslation();
-  const [searchPhrase, setSearchPhrase] = useState('');
-  const [clicked, setClicked] = useState(false);
-  const [filteredData, setFilteredData] = useState(credentialStorage.credentials);
+  const [searchPhrase, setSearchPhrase] = useState('')
+  const [clicked, setClicked] = useState(false)
 
-  const refreshFilteredData = useCallback(() => {
-    console.log(filteredData)
-    setFilteredData(filteredData);
-  }, [filteredData]);
-  // Should not ever set state during rendering, so do this in useEffect instead.
-  useEffect(() => {
-    if (filteredData.length < credentialStorage.credentials.length) {
-      refreshFilteredData();
-    }
-  }, [filteredData, credentialStorage.credentials.length, refreshFilteredData]);
+  const animatedScales = useMemo(
+    () =>
+      credentials.reduce<Record<string, Animated.Value>>((acc, item) => {
+        acc[item.id] = new Animated.Value(1)
+        return acc
+      }, {}),
+    [credentials]
+  )
 
-  const search = (text: string) => {
-    const filteredData = credentialStorage.credentials.filter((item) => {
-      const orgLabel = item.display.name;
-      const textData = text.toUpperCase();
-      return orgLabel.includes(textData);
-    });
+  const filteredCredentials = useMemo(() => {
+    if (!searchPhrase) return credentials
+    return credentials.filter((item) => {
+      const name =
+        item.tags?.displayName ||
+        item.display?.name ||
+        'Credential'
+      return name.toLowerCase().includes(searchPhrase.toLowerCase())
+    })
+  }, [searchPhrase, credentials])
 
-    setFilteredData(filteredData);
-    setSearchPhrase(text);
-  };
+  const handlePress = (id: string) => {
+    console.log('✅ Pressed card:', id)
+    const scale = animatedScales[id]
 
-  const emptyListComponent = () => (
-    <Text style={{ textAlign: 'center', marginTop: 100 }}>
-      {t<string>('Global.ZeroRecords')}
-    </Text>
-  );
+    Animated.sequence([
+      Animated.spring(scale, { toValue: 1.08, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, useNativeDriver: true }),
+    ]).start(() => {
+      navigation.navigate(Screens.CredentialDetails as never, {
+        credentialId: id,
+      } as never)
+    })
+  }
 
-  console.log(filteredData)
+  const renderCard = ({ item, index }: { item: any; index: number }) => {
+    const tags = item.tags || {}
+    const scale = animatedScales[item.id] || new Animated.Value(1)
+    const isTopCard = index === filteredCredentials.length - 1
+
+    return (
+      <View
+        key={item.id}
+        pointerEvents={isTopCard ? 'auto' : 'none'} // nur oberste Karte klickbar
+        style={[
+          styles.cardWrapper,
+          index > 0 && { marginTop: -CARD_OVERLAP },
+        ]}
+      >
+        <Pressable
+          pointerEvents="box-only"
+          onPress={() => handlePress(item.id)}
+          android_ripple={{ color: 'rgba(0,0,0,0.05)' }}
+          style={({ pressed }) => [
+            styles.pressable,
+            pressed && { opacity: 0.95, transform: [{ scale: 1.02 }] },
+          ]}
+        >
+          <Animated.View style={[styles.cardFrame, { transform: [{ scale }] }]}>
+            <CredentialCard
+              credential={item}
+              name={tags.displayName || item.display?.name || 'Credential'}
+              issuerName={tags.displayIssuer || item.display?.issuer?.name || 'Unknown'}
+              description={tags.displayDescription || ''}
+              backgroundColor={tags.backgroundColor || '#eee'}
+              textColor={tags.textColor || '#000'}
+              backgroundImage={
+                tags.backgroundImage
+                  ? { uri: tags.backgroundImage }
+                  : undefined
+              }
+              logo={
+                tags.displayIssuerLogo
+                  ? { uri: tags.displayIssuerLogo }
+                  : undefined
+              }
+              style={styles.card}
+            />
+          </Animated.View>
+        </Pressable>
+      </View>
+    )
+  }
+
+  if (!credentials?.length) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>{t<string>('Global.ZeroRecords')}</Text>
+      </View>
+    )
+  }
 
   return (
     <View style={styles.container}>
       <SearchBar
         searchPhrase={searchPhrase}
-        setSearchPhrase={(setSearchPhrase) => search(setSearchPhrase)}
+        setSearchPhrase={setSearchPhrase}
         clicked={clicked}
         setClicked={setClicked}
       />
+
       <FlatList
-        data={filteredData}
-        renderItem={({ item }) => <CredentialCard 
-            credential={item}
-            issuerImage={item.display.issuer.logo}
-            backgroundImage={item.display.backgroundImage}
-            textColor={item.display.textColor}
-            name={item.display.name}
-            issuerName={item.display.issuer.name}
-            subtitle={item.display.description}
-            bgColor={item.display.backgroundColor}
-         />}
+        data={filteredCredentials.slice().reverse()}
+        renderItem={renderCard}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={emptyListComponent}
-        horizontal={false}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={filteredCredentials.length > 6}
       />
     </View>
-  );
-};
+  )
+}
 
-
-export default ListCredentials;
+export default ListCredentials
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: ColorPallet.grayscale.white,
-    marginVertical: 16,
-  },
-  card: {
-    backgroundColor: ColorPallet.baseColors.white,
-    borderRadius: 10,
-    elevation: 3,
-    padding: 10,
-    marginVertical: 10,
-    width: '90%',
-    alignSelf: 'center',
-  },
-  cardIos: {
-    backgroundColor: ColorPallet.baseColors.white,
-    shadowColor: ColorPallet.baseColors.black,
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.22,
-    shadowRadius: 2.22,
-    borderRadius: 10,
-    padding: 10,
-    marginVertical: 10,
-    width: '90%',
-    alignSelf: 'center',
-  },
-  text: {
-    fontSize: 18,
-    marginBottom: 20,
-  },
-  safeArea: {
     flex: 1,
+    backgroundColor: ColorPallet.grayscale.white,
   },
-  heading: {
+  scrollContainer: {
+    paddingTop: 10,
+    paddingBottom: 100,
     alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
   },
-  hidden: {
-    height: 0,
+  cardWrapper: {
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  list: {
+  pressable: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 22,
+  },
+  cardFrame: {
+    flex: 1,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: '#000',
+    backgroundColor: '#000',
     overflow: 'hidden',
   },
-  sectionTitle: {
-    ...TextTheme.normal,
-    fontWeight: 'bold',
-    color: ColorPallet.baseColors.black,
-    marginLeft: '5%',
+  card: {
+    flex: 1,
+    borderRadius: 20,
   },
-  sectionSubTitle: {
-    ...TextTheme.caption,
-    color: ColorPallet.baseColors.black,
-    marginLeft: '5%',
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  sectionDescription: {
-    ...TextTheme.caption,
-    color: ColorPallet.baseColors.black,
-    height: 30,
-    marginLeft: '5%',
+  emptyText: {
+    color: '#777',
+    fontSize: 16,
   },
-  divider: {
-    borderBottomColor: ColorPallet.baseColors.lightGrey,
-    borderBottomWidth: 1,
-    width: '100%',
-  },
-  credentialCardView: {
-    marginHorizontal: 15,
-    marginTop: 16,
-  },
-  innerContainer: {
-    flexDirection: 'row',
-    marginVertical: 5,
-  },
-  attribute: {
-    width: '50%',
-    color: ColorPallet.baseColors.black,
-  },
-  scrollView: {
-    paddingBottom: 30,
-  },
-});
+})
