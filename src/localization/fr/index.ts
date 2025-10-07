@@ -158,6 +158,8 @@ const translation = {
     Version: 'Version',
     Issued: 'Publié',
     RemoveFromWallet: 'Retirer du portefeuille',
+    DeleteTitle: "Supprimer les informations d'identification?",
+    DeleteConfirm: "Veuillez confirmer la suppression des informations d'identification."
   },
   CredentialOffer: {
     ThisIsTakingLongerThanExpected: 'Cela prend plus de temps que prévu. Revenez plus tard pour un nouvel identifiant.',

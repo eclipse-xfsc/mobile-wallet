@@ -1,5 +1,4 @@
 import { useMemo } from 'react'
-
 import { getCredentialForDisplay } from '../display'
 import { useSdJwtVcRecords, useW3cCredentialRecords } from '../providers'
 
@@ -8,28 +7,26 @@ export const useCredentialsForDisplay = () => {
   const { sdJwtVcRecords, isLoading: isLoadingSdJwt } = useSdJwtVcRecords()
 
   const credentials = useMemo(() => {
-    // Hole Originaldaten mit Tags
-    const enrichedW3c = w3cCredentialRecords.map((record) => {
+    const mapRecord = (record: any) => {
       const base = getCredentialForDisplay(record)
+      const tags = record.getTags?.() || {}
+
+      // 🧩 Sicherstellen, dass alle Tags geladen und gültig sind
       return {
         ...base,
         id: record.id,
-        tags: record.getTags(), // 🔥 tags erhalten!
+        tags,
         createdAt: record.createdAt,
       }
-    })
+    }
 
-    const enrichedSdJwt = sdJwtVcRecords.map((record) => {
-      const base = getCredentialForDisplay(record)
-      return {
-        ...base,
-        id: record.id,
-        tags: record.getTags(), // 🔥 tags erhalten!
-        createdAt: record.createdAt,
-      }
-    })
+    const enrichedW3c = w3cCredentialRecords.map(mapRecord)
+    const enrichedSdJwt = sdJwtVcRecords.map(mapRecord)
 
-    // Sortierung nach Zeit (neueste zuerst)
+    // 🧠 Logging
+    console.log('🪪 Loaded credentials:')
+    enrichedSdJwt.forEach((rec) => console.log(rec.id, rec.tags.backgroundImage))
+
     return [...enrichedW3c, ...enrichedSdJwt].sort(
       (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
     )

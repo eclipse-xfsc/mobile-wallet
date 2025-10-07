@@ -87,74 +87,93 @@ const CredentialOfferOid4VC: React.FC<CredentialOffer4VciProps> = ({
   }, [url, agent, t])
 
   // ---------- Accept ----------
-  const handleAcceptPress = async () => {
-      try {
-        if (!resolvedOffer) throw new Error('No resolved offer')
-        console.log('Hide Buttons and show Pending')
-        setButtonsVisible(false)
-        setPendingModalVisible(true)
+  const handleAcceptPress = async (itemId: string) => {
+    try {
+      if (!resolvedOffer) throw new Error('No resolved offer')
+      console.log('▶️ Accept pressed for itemId:', itemId)
 
-        // Kleine Pause, um Modal anzuzeigen
-        await new Promise((resolve) => setTimeout(resolve, 100))
+      setButtonsVisible(false)
+      setPendingModalVisible(true)
 
-        const credentials =
-          await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
-            resolvedOffer,
-            {
-              credentialBindingResolver: async ({
-                supportedDidMethods,
-                keyType,
-                supportsAllDidMethods,
-                supportsJwk,
-                credentialFormat,
-              }) => {
-                if (
-                  supportsAllDidMethods ||
-                  supportedDidMethods?.includes('did:key')
-                ) {
-                  const didResult = await agent.dids.create<KeyDidCreateOptions>({
-                    method: 'key',
-                    options: { keyType },
-                  })
-                  if (didResult.didState.state !== 'finished') {
-                    throw new Error('DID creation failed.')
-                  }
-                  const didKey = DidKey.fromDid(didResult.didState.did)
-                  return {
-                    method: 'did',
-                    didUrl: `${didKey.did}#${didKey.key.fingerprint}`,
-                  }
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      const credentials =
+        await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
+          resolvedOffer,
+          {
+            credentialBindingResolver: async ({
+              supportedDidMethods,
+              keyType,
+              supportsAllDidMethods,
+              supportsJwk,
+              credentialFormat,
+            }) => {
+              if (supportsAllDidMethods || supportedDidMethods?.includes('did:key')) {
+                const didResult = await agent.dids.create<KeyDidCreateOptions>({
+                  method: 'key',
+                  options: { keyType },
+                })
+                if (didResult.didState.state !== 'finished') {
+                  throw new Error('DID creation failed.')
                 }
+                const didKey = DidKey.fromDid(didResult.didState.did)
+                return { method: 'did', didUrl: `${didKey.did}#${didKey.key.fingerprint}` }
+              }
 
-                if (
-                  supportsJwk &&
-                  credentialFormat === OpenId4VciCredentialFormatProfile.SdJwtVc
-                ) {
-                  const key = await agent.wallet.createKey({ keyType })
-                  return { method: 'jwk', jwk: getJwkFromKey(key) }
-                }
+              if (
+                supportsJwk &&
+                credentialFormat === OpenId4VciCredentialFormatProfile.SdJwtVc
+              ) {
+                const key = await agent.wallet.createKey({ keyType })
+                return { method: 'jwk', jwk: getJwkFromKey(key) }
+              }
 
-                throw new Error('Unable to create a key binding')
-              },
-              verifyCredentialStatus: false,
-              allowedProofOfPossessionSignatureAlgorithms: [
-                JwaSignatureAlgorithm.EdDSA,
-                JwaSignatureAlgorithm.ES256,
-              ],
-            }
-          )
+              throw new Error('Unable to create a key binding')
+            },
+            verifyCredentialStatus: false,
+            allowedProofOfPossessionSignatureAlgorithms: [
+              JwaSignatureAlgorithm.EdDSA,
+              JwaSignatureAlgorithm.ES256,
+            ],
+          }
+        )
 
-        for (const credential of credentials) {
-        // ---------- W3C ----------
-        if (!('compact' in credential)) {
-          const record: W3cCredentialRecord = await agent.w3cCredentials.storeCredential({ credential })
+      console.log('✅ Received credentials:', credentials)
+
+      // ---------- Iterate über alle zurückgegebenen Credentials ----------
+      for (const credential of credentials) {
+        const isSdJwt = 'compact' in credential
+        console.log('🧩 Credential type:', isSdJwt ? 'SD-JWT' : 'W3C')
+
+        // ========== W3C ==========
+        if (!isSdJwt) {
+          const record: W3cCredentialRecord = await agent.w3cCredentials.storeCredential({
+            credential,
+          })
           const repository = agent.dependencyManager.resolve(W3cCredentialRepository)
 
+          // Nutze itemId statt credential.id
           const offeredConfig =
-            resolvedOffer.offeredCredentialConfigurations?.[credential.id]
+            resolvedOffer.offeredCredentialConfigurations?.[itemId]
           const displayConfig = offeredConfig?.display?.[0]
           const issuerDisplay =
             resolvedOffer.metadata?.credentialIssuerMetadata?.display?.[0]
+
+          console.log('📄 offeredConfig:', offeredConfig)
+          console.log('🎨 displayConfig:', displayConfig)
+          console.log('🏢 issuerDisplay:', issuerDisplay)
+
+          // ---------- Hintergrundbild finden ----------
+          const backgroundImageUri =
+            displayConfig?.background_image?.uri ||
+            displayConfig?.background_image?.url ||
+            resolvedOffer.metadata?.credentialIssuerMetadata?.credential_configurations_supported?.[itemId]?.display?.[0]?.background_image?.uri ||
+            resolvedOffer.metadata?.credentialIssuerMetadata?.credential_configurations_supported?.[itemId]?.display?.[0]?.background_image?.url ||
+            issuerDisplay?.background_image?.uri ||
+            issuerDisplay?.background_image?.url ||
+            issuerDisplay?.logo?.uri || // fallback: logo
+            issuerDisplay?.logo?.url ||
+            ''
 
           const displayData: any = {
             name: displayConfig?.name || credential.id,
@@ -168,16 +187,15 @@ const CredentialOfferOid4VC: React.FC<CredentialOffer4VciProps> = ({
                 ? { uri: issuerDisplay.logo.uri || issuerDisplay.logo.url }
                 : undefined,
             },
-            background_image: displayConfig?.background_image
-              ? {
-                  uri:
-                    displayConfig.background_image.uri ||
-                    displayConfig.background_image.url,
-                }
-              : undefined,
-            background_color: displayConfig?.background_color,
-            text_color: displayConfig?.text_color,
+            background_image: backgroundImageUri ? { uri: backgroundImageUri } : undefined,
+            background_color:
+              displayConfig?.background_color ||
+              issuerDisplay?.background_color ||
+              '#ffffff',
+            text_color: displayConfig?.text_color || issuerDisplay?.text_color || '#000000',
           }
+
+          console.log('🎨 Background image URI resolved to:', backgroundImageUri)
 
           // ---------- Lade Hintergrundbild & speichere lokal ----------
           let localUri = ''
@@ -213,18 +231,35 @@ const CredentialOfferOid4VC: React.FC<CredentialOffer4VciProps> = ({
 
           // ---------- Record speichern ----------
           await repository.update(agent.context, record)
+          console.log('💾 Updated W3C record:', record)
           continue
         }
 
-        // ---------- SD-JWT ----------
+        // ========== SD-JWT ==========
         const record: SdJwtVcRecord = await agent.sdJwtVc.store(credential.compact)
         const repository = agent.dependencyManager.resolve(SdJwtVcRepository)
-        
+
         const offeredConfig =
-          resolvedOffer.offeredCredentialConfigurations?.[credential.id]
+          resolvedOffer.offeredCredentialConfigurations?.[itemId]
         const displayConfig = offeredConfig?.display?.[0]
         const issuerDisplay =
           resolvedOffer.metadata?.credentialIssuerMetadata?.display?.[0]
+        console.log('📄 resolved:', resolvedOffer)
+        console.log('📄 offeredConfig:', offeredConfig)
+        console.log('🎨 displayConfig:', displayConfig)
+        console.log('🏢 issuerDisplay:', issuerDisplay)
+
+        // ---------- Hintergrundbild finden ----------
+        const backgroundImageUri =
+          displayConfig?.background_image?.uri ||
+          displayConfig?.background_image?.url ||
+          resolvedOffer.metadata?.credentialIssuerMetadata?.credential_configurations_supported?.[itemId]?.display?.[0]?.background_image?.uri ||
+          resolvedOffer.metadata?.credentialIssuerMetadata?.credential_configurations_supported?.[itemId]?.display?.[0]?.background_image?.url ||
+          issuerDisplay?.background_image?.uri ||
+          issuerDisplay?.background_image?.url ||
+          issuerDisplay?.logo?.uri || // fallback: logo
+          issuerDisplay?.logo?.url ||
+          ''
 
         const displayData: any = {
           name: displayConfig?.name || credential.id,
@@ -238,16 +273,15 @@ const CredentialOfferOid4VC: React.FC<CredentialOffer4VciProps> = ({
               ? { uri: issuerDisplay.logo.uri || issuerDisplay.logo.url }
               : undefined,
           },
-          background_image: displayConfig?.background_image
-            ? {
-                uri:
-                  displayConfig.background_image.uri ||
-                  displayConfig.background_image.url,
-              }
-            : undefined,
-          background_color: displayConfig?.background_color,
-          text_color: displayConfig?.text_color,
+          background_image: backgroundImageUri ? { uri: backgroundImageUri } : undefined,
+          background_color:
+            displayConfig?.background_color ||
+            issuerDisplay?.background_color ||
+            '#ffffff',
+          text_color: displayConfig?.text_color || issuerDisplay?.text_color || '#000000',
         }
+
+        console.log('🎨 Background image URI resolved to:', backgroundImageUri)
 
         // ---------- Lade Hintergrundbild & speichere lokal ----------
         let localUri = ''
@@ -283,31 +317,32 @@ const CredentialOfferOid4VC: React.FC<CredentialOffer4VciProps> = ({
 
         // ---------- Record speichern ----------
         await repository.update(agent.context, record)
+        console.log('💾 Updated SD-JWT record:', record)
       }
 
+      // ---------- UI ----------
+      setPendingModalVisible(false)
+      setSuccessModalVisible(true)
 
-        // ---------- UI / Navigation ----------
-        setPendingModalVisible(false)
-        setSuccessModalVisible(true)
-
-        setTimeout(() => {
-          setSuccessModalVisible(false)
-          navigation.popToTop()
-          navigation.getParent()?.navigate(TabStacks.CredentialStack, {
-            screen: Screens.Credentials,
-          })
-        }, 1500)
-      } catch (error: unknown) {
-        console.error(error)
-        setButtonsVisible(true)
-        setPendingModalVisible(false)
-        Toast.show({
-          type: ToastType.Error,
-          text1: 'OID Credential Error',
-          text2: 'credential could not be received',
+      setTimeout(() => {
+        setSuccessModalVisible(false)
+        navigation.popToTop()
+        navigation.getParent()?.navigate(TabStacks.CredentialStack, {
+          screen: Screens.Credentials,
         })
-      }
+      }, 1500)
+    } catch (error) {
+      console.error('❌ Accept error:', error)
+      setButtonsVisible(true)
+      setPendingModalVisible(false)
+      Toast.show({
+        type: ToastType.Error,
+        text1: 'OID Credential Error',
+        text2: 'Credential could not be received',
+      })
     }
+  }
+
 
 
   // ---------- Decline ----------
@@ -367,16 +402,18 @@ const CredentialOfferOid4VC: React.FC<CredentialOffer4VciProps> = ({
             const display = (config as any)?.display?.[0]
             const cardWidth = width * 0.9
             const cardHeight = Math.min(cardWidth * (9 / 16), CARD_MAX_HEIGHT)
+
             return (
               <View
                 style={{
                   width: cardWidth,
-                  height: cardHeight,
+                  height: cardHeight + 120, // Platz für Buttons unten
                   alignItems: 'center',
-                  justifyContent: 'center',
+                  justifyContent: 'flex-start',
                   marginHorizontal: width * 0.05,
                 }}
               >
+                {/* Karte */}
                 <CredentialCard
                   credential={config?.vct || item.vct}
                   name={display?.name}
@@ -390,13 +427,13 @@ const CredentialOfferOid4VC: React.FC<CredentialOffer4VciProps> = ({
                   backgroundImage={
                     display?.background_image
                       ? {
-                          uri:
-                            display.background_image.uri ||
-                            display.background_image.url,
-                        }
+                        uri:
+                          display.background_image.uri ||
+                          display.background_image.url,
+                      }
                       : display?.logo
-                      ? { uri: display.logo.uri || display.logo.url }
-                      : undefined
+                        ? { uri: display.logo.uri || display.logo.url }
+                        : undefined
                   }
                   logo={
                     display?.logo
@@ -405,6 +442,23 @@ const CredentialOfferOid4VC: React.FC<CredentialOffer4VciProps> = ({
                   }
                   style={{ borderRadius: 16, overflow: 'hidden' }}
                 />
+
+                {/* Buttons direkt unter der Karte */}
+                <View style={{ marginTop: 20, width: '80%' }}>
+                  <Button
+                    title={t<string>('Global.Accept')}
+                    onPress={() => handleAcceptPress(item.id)} // ✅ item.id existiert hier
+                    disabled={!buttonsVisible}
+                    buttonType={ButtonType.Primary}
+                  />
+                  <View style={{ height: 10 }} />
+                  <Button
+                    title={t<string>('Global.Decline')}
+                    onPress={() => setDeclinedModalVisible(true)}
+                    disabled={!buttonsVisible}
+                    buttonType={ButtonType.Ghost}
+                  />
+                </View>
               </View>
             )
           }}
@@ -416,23 +470,6 @@ const CredentialOfferOid4VC: React.FC<CredentialOffer4VciProps> = ({
           </Text>
         </View>
       )}
-
-      {/* Footer Buttons */}
-      <View style={{ padding: 20 }}>
-        <Button
-          title={t<string>('Global.Accept')}
-          onPress={handleAcceptPress}
-          disabled={!buttonsVisible}
-          buttonType={ButtonType.Primary}
-        />
-        <View style={{ height: 10 }} />
-        <Button
-          title={t<string>('Global.Decline')}
-          onPress={handleDeclinePress}
-          disabled={!buttonsVisible}
-          buttonType={ButtonType.Ghost}
-        />
-      </View>
 
       {/* ---------- Modals ---------- */}
       {pendingModalVisible && (

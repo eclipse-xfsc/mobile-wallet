@@ -1,6 +1,5 @@
 import type { StackScreenProps } from '@react-navigation/stack'
 import React, { useEffect, useState, useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
 import {
   ActivityIndicator,
   Platform,
@@ -9,150 +8,112 @@ import {
   Text,
   View,
   Alert,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { useAgent } from '@credo-ts/react-hooks'
-import { W3cCredentialRepository } from '@credo-ts/core'
-import { SdJwtVcRepository } from '@credo-ts/core/build/modules/sd-jwt-vc/repository'
-
+import { W3cCredentialRepository, SdJwtVcRepository } from '@credo-ts/core'
+import { Buffer } from 'buffer';
 import Accordion from '../../components/accordion/Accordion'
 import CredentialCard from '../../components/misc/CredentialCard'
 import { ColorPallet } from '../../theme/theme'
 import { CredentialStackParams, Screens } from '../../types/navigators'
-import { RecordHistory } from '../../types/record'
-import { errorToast, warningToast, successToast } from '../../utils/toast'
+import { errorToast, successToast, warningToast } from '../../utils/toast'
 
 type CredentialDetailsProps = StackScreenProps<
   CredentialStackParams,
   Screens.CredentialDetails
 >
 
-const CredentialDetails: React.FC<CredentialDetailsProps> = ({
-  route,
-  navigation,
-}) => {
+const CredentialDetails: React.FC<CredentialDetailsProps> = ({ route, navigation }) => {
   const { t } = useTranslation()
   const { credentialId } = route.params
   const { agent } = useAgent()
 
   const [credential, setCredential] = useState<any | null>(null)
-  const [history, setHistory] = useState<RecordHistory[]>([])
   const [loading, setLoading] = useState(true)
 
   // ---------- Lade Credential ----------
-  const loadCredential = useCallback(async () => {
-    if (!agent || !credentialId) return
+  useEffect(() => {
+    const loadCredential = async () => {
+      if (!agent || !credentialId) return
 
-    try {
-      let record = null
-
-      // Versuche zuerst SD-JWT
       try {
-        const sdjwtRepo = agent.dependencyManager.resolve(SdJwtVcRepository)
-        record = await sdjwtRepo.findById(agent.context, credentialId)
-      } catch (e) {
-        console.log('⚠️ SD-JWT Repo not found or record missing:', e)
-      }
+        console.log('🔍 Lade Credential:', credentialId)
 
-      // Dann Fallback: W3C Credential Repo
-      if (!record) {
+        // Versuch W3C zuerst
+        let record = null
         const w3cRepo = agent.dependencyManager.resolve(W3cCredentialRepository)
-        record = await w3cRepo.findById(agent.context, credentialId)
-      }
+        const sdjwtRepo = agent.dependencyManager.resolve(SdJwtVcRepository)
 
-      if (!record) {
-        warningToast(t<string>('CredentialOffer.CredentialNotFound'))
-        navigation.goBack()
-        return
-      }
+        try {
+          record = await w3cRepo.findById(agent.context, credentialId)
+          if (record) console.log('✅ Gefunden im W3C Repository')
+        } catch {}
 
-      setCredential(record)
-    } catch (e) {
-      console.error('❌ Fehler beim Laden der Credential:', e)
-      errorToast('Credential konnte nicht geladen werden')
-    } finally {
-      setLoading(false)
+        if (!record) {
+          try {
+            record = await sdjwtRepo.findById(agent.context, credentialId)
+            if (record) console.log('✅ Gefunden im SD-JWT Repository')
+          } catch {}
+        }
+
+        if (!record) {
+          warningToast(t<string>('CredentialOffer.CredentialNotFound'))
+          navigation.goBack()
+          return
+        }
+
+        console.log('📦 Credential Record:', record)
+        console.log('🏷️ Tags:', record.getTags?.())
+        setCredential(record)
+      } catch (e) {
+        console.error('❌ Fehler beim Laden der Credential:', e)
+        errorToast('Credential konnte nicht geladen werden')
+      } finally {
+        setLoading(false)
+      }
     }
+
+    void loadCredential()
   }, [agent, credentialId, navigation, t])
 
-  useEffect(() => {
-    void loadCredential()
-  }, [loadCredential])
-
-  // ---------- Lade Credential History ----------
-  const getCredentialHistory = useCallback(async () => {
-    if (!agent || !credential) return
-    try {
-      const data = await agent.genericRecords.findAllByQuery({
-        credentialRecordId: credential.id,
-      })
-
-      const allRecords: RecordHistory[] = []
-      data?.forEach((record) => {
-        if (record.content?.records) {
-          allRecords.push(...record.content.records)
-        }
-      })
-
-      const filtered = allRecords.filter((r) => r?.credentialLabel)
-      const sorted = filtered.sort(
-        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      )
-
-      setHistory(sorted)
-    } catch (err) {
-      console.error('❌ Fehler beim Laden der Credential History:', err)
-      errorToast(t<string>('credential.get.error'))
-    }
-  }, [agent, credential, t])
-
-  useEffect(() => {
-    void getCredentialHistory()
-  }, [getCredentialHistory])
-
   // ---------- Delete Credential ----------
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!agent || !credential) return
+
     Alert.alert(
-      'Delete Credential',
-      'Are you sure you want to permanently delete this credential?',
+      t<string>('CredentialDetails.DeleteTitle') || 'Delete Credential',
+      t<string>('CredentialDetails.DeleteConfirm') ||
+        'Are you sure you want to delete this credential?',
       [
-        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete',
+          text: t<string>('Global.Cancel') || 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: t<string>('CredentialDetails.RemoveFromWallet') || 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {
-              // Versuche SD-JWT zu löschen
-              try {
-                const sdjwtRepo = agent.dependencyManager.resolve(SdJwtVcRepository)
-                await sdjwtRepo.deleteById(agent.context, credential.id)
-                successToast('SD-JWT Credential deleted')
-              } catch (e) {
-                console.log('⚠️ SD-JWT delete failed or not found:', e)
-              }
+              const isSdJwt = 'compactSdJwtVc' in credential
+              const repository = isSdJwt
+                ? agent.dependencyManager.resolve(SdJwtVcRepository)
+                : agent.dependencyManager.resolve(W3cCredentialRepository)
 
-              // Falls SD-JWT nicht vorhanden → versuche W3C
-              try {
-                const w3cRepo = agent.dependencyManager.resolve(W3cCredentialRepository)
-                await w3cRepo.deleteById(agent.context, credential.id)
-                successToast('W3C Credential deleted')
-              } catch (e) {
-                console.log('⚠️ W3C delete failed or not found:', e)
-              }
+              await repository.delete(agent.context, credential)
 
-              navigation.navigate(Screens.Credentials as never, {
-                refresh: Date.now(),
-              } as never)
-            } catch (e) {
-              console.error('❌ Delete failed:', e)
-              errorToast('Failed to delete credential')
+              successToast(t<string>('CredentialDetails.Deleted'))
+              navigation.goBack()
+            } catch (err) {
+              console.error('❌ Fehler beim Löschen:', err)
+              errorToast(t<string>('CredentialDetails.DeleteError'))
             }
           },
         },
       ]
     )
-  }
+  }, [agent, credential, navigation, t])
 
   // ---------- Ladeanzeige ----------
   if (loading || !credential) {
@@ -166,17 +127,22 @@ const CredentialDetails: React.FC<CredentialDetailsProps> = ({
 
   // ---------- Anzeige aus Tags ----------
   const tags = credential.getTags?.() ?? {}
+  console.log('🏷️ Tags (via getTags):', tags)
+
   const displayName = tags.displayName || 'Credential'
   const displayIssuer = tags.displayIssuer || 'Unknown'
   const description = tags.displayDescription || ''
   const backgroundColor = tags.backgroundColor || '#eee'
   const textColor = tags.textColor || '#000'
-  const backgroundImage = tags.backgroundImage ? { uri: tags.backgroundImage } : undefined
+  const backgroundImage =
+    tags.backgroundImage ? { uri: tags.backgroundImage } : undefined
+
+  console.log('🖼️ Background Image:', backgroundImage)
 
   // ---------- Render ----------
   return (
     <ScrollView contentContainerStyle={styles.scrollView}>
-      {/* ---------- KARTENANZEIGE ---------- */}
+      {/* ---------- Credential Card ---------- */}
       <View style={styles.credentialCardView}>
         <CredentialCard
           credential={credential}
@@ -200,59 +166,99 @@ const CredentialDetails: React.FC<CredentialDetailsProps> = ({
             </View>
             <View style={styles.divider} />
 
-            {credential?.attributes
-              ? Object.entries(credential.attributes).map(([key, value]) => (
-                  <View key={key} style={styles.innerContainer}>
-                    <Text style={styles.attribute}>{key}</Text>
-                    <Text style={styles.attribute}>{String(value)}</Text>
-                  </View>
-                ))
-              : null}
+            {/* Attribute anzeigen */}
+            {(() => {
+              // ✅ Für SD-JWT
+              if ('compactSdJwtVc' in credential && typeof credential.compactSdJwtVc === 'string') {
+                try {
+                  const [headerB64, payloadB64, signature, ...disclosuresRaw] =
+                    credential.compactSdJwtVc.split(/[.~]/g).filter(Boolean)
+
+                  const payload = JSON.parse(
+                    Buffer.from(payloadB64, 'base64').toString('utf-8')
+                  )
+
+                  const attributes: Record<string, any> = {}
+
+                  // ✅ Extract "cnf.kid" → "Key Id"
+                  if (payload.cnf?.kid) attributes['Key Id'] = payload.cnf.kid
+
+                  // ✅ Extract "vct" → "VC Type"
+                  if (payload.vct) attributes['VC Type'] = payload.vct
+
+                  // ✅ Decode disclosures
+                  const disclosures = credential.compactSdJwtVc.split('~').slice(1)
+                  disclosures.forEach((disclosure) => {
+                    try {
+                      const decoded = JSON.parse(
+                        Buffer.from(disclosure, 'base64').toString('utf-8')
+                      )
+                      if (Array.isArray(decoded) && decoded.length >= 3) {
+                        const [, key, value] = decoded
+                        attributes[key] = value
+                      }
+                    } catch (err) {
+                      console.warn('⚠️ Disclosure decode failed:', err)
+                    }
+                  })
+
+                  return Object.entries(attributes).length ? (
+                    Object.entries(attributes).map(([key, value]) => (
+                      <View key={key} style={styles.innerContainer}>
+                        <Text style={styles.attribute}>{key}</Text>
+                        <Text style={styles.attribute}>
+                          {typeof value === 'object'
+                            ? JSON.stringify(value, null, 2)
+                            : String(value)}
+                        </Text>
+                      </View>
+                    ))
+                  ) : (
+                    <Text style={styles.noActivitiesText}>No attributes found</Text>
+                  )
+                } catch (err) {
+                  console.error('❌ Fehler beim Dekodieren von SD-JWT:', err)
+                  return (
+                    <Text style={styles.noActivitiesText}>Failed to decode SD-JWT</Text>
+                  )
+                }
+              }
+
+              // ✅ Für klassische W3C Credentials
+              if (credential.credential?.credentialSubject) {
+                return Object.entries(credential.credential.credentialSubject).map(
+                  ([key, value]) => (
+                    <View key={key} style={styles.innerContainer}>
+                      <Text style={styles.attribute}>{key}</Text>
+                      <Text style={styles.attribute}>
+                        {typeof value === 'object'
+                          ? JSON.stringify(value, null, 2)
+                          : String(value)}
+                      </Text>
+                    </View>
+                  )
+                )
+              }
+
+              return <Text style={styles.noActivitiesText}>No attributes found</Text>
+            })()}
           </View>
         </Accordion>
       </View>
 
-      {/* ---------- AKTIVITÄTEN ---------- */}
-      <View style={Platform.OS === 'android' ? styles.card : styles.cardIos}>
-        <Accordion title="Activities" innerAccordion={false}>
-          {history.length ? (
-            history.map((item, index) => (
-              <View key={index}>
-                <Accordion
-                  title={item.connectionLabel}
-                  date={new Date(item.timestamp)}
-                  status={item.status}
-                  innerAccordion
-                >
-                  {Object.entries(item.attributes).map(([key, value]) => (
-                    <View key={key} style={styles.innerContainer}>
-                      <Text style={styles.attribute}>{key}</Text>
-                      <Text style={styles.attribute}>{String(value)}</Text>
-                    </View>
-                  ))}
-                </Accordion>
-                {history.length - 1 !== index && <View style={styles.divider} />}
-              </View>
-            ))
-          ) : (
-            <Text style={styles.noActivitiesText}>
-              {t<string>('CredentialDetails.NoActivity')}
-            </Text>
-          )}
-        </Accordion>
-      </View>
-
       {/* ---------- DELETE BUTTON ---------- */}
-      <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-        <Text style={styles.deleteButtonText}>Delete Credential</Text>
-      </TouchableOpacity>
+      <Pressable onPress={handleDelete} style={styles.deleteButton}>
+        <Text style={styles.deleteText}>
+          {t<string>('CredentialDetails.RemoveFromWallet') || 'Delete Credential'}
+        </Text>
+      </Pressable>
     </ScrollView>
   )
 }
 
 export default CredentialDetails
 
-// ---------- STYLES ----------
+// ---------- Styles ----------
 const styles = StyleSheet.create({
   scrollView: {
     paddingBottom: 40,
@@ -313,17 +319,18 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   deleteButton: {
-    backgroundColor: '#c62828',
+    marginTop: 30,
+    marginBottom: 50,
+    backgroundColor: '#C62828',
     paddingVertical: 14,
-    paddingHorizontal: 30,
-    borderRadius: 12,
+    borderRadius: 10,
+    width: '90%',
     alignSelf: 'center',
-    marginTop: 20,
-    marginBottom: 40,
   },
-  deleteButtonText: {
+  deleteText: {
     color: '#fff',
-    fontWeight: '600',
+    textAlign: 'center',
     fontSize: 16,
+    fontWeight: '600',
   },
 })

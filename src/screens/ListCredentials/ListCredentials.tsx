@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useMemo } from 'react'
+import React, { useCallback, useState, useMemo, useEffect } from 'react'
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   FlatList,
 } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { useNavigation, useFocusEffect } from '@react-navigation/native'
+import { useNavigation, useFocusEffect, useIsFocused } from '@react-navigation/native'
 import { useCredentialsForDisplay } from '../../agent/hooks'
 import CredentialCard from '../../components/misc/CredentialCard'
 import SearchBar from '../../components/inputs/SearchBar'
@@ -25,18 +25,23 @@ const ListCredentials: React.FC = () => {
   const { t } = useTranslation()
   const navigation = useNavigation()
   const { credentials } = useCredentialsForDisplay()
+  const isFocused = useIsFocused()
 
   const [searchPhrase, setSearchPhrase] = useState('')
   const [clicked, setClicked] = useState(false)
+  const [refreshNonce, setRefreshNonce] = useState(0)
 
+  // 👇 Erzwinge echten Re-Mount beim Fokus
   useFocusEffect(
-  useCallback(() => {
-    console.log('🔄 Screen refocused → Credentials refreshed')
-    // Dieser State-Change triggert einen Re-Render und aktualisiert Hooks
-    setClicked(false)
-  }, [])
-)
+    useCallback(() => {
+      console.log('🔁 Screen focused → remount credential list')
+      // kurzer Delay → garantiert neues Layout & Image-Rendering
+      setTimeout(() => setRefreshNonce((n) => n + 1), 100)
+      setClicked(false)
+    }, [])
+  )
 
+  // 🧩 Animation-Map pro Credential
   const animatedScales = useMemo(
     () =>
       credentials.reduce<Record<string, Animated.Value>>((acc, item) => {
@@ -49,10 +54,7 @@ const ListCredentials: React.FC = () => {
   const filteredCredentials = useMemo(() => {
     if (!searchPhrase) return credentials
     return credentials.filter((item) => {
-      const name =
-        item.tags?.displayName ||
-        item.display?.name ||
-        'Credential'
+      const name = item.tags?.displayName || item.display?.name || 'Credential'
       return name.toLowerCase().includes(searchPhrase.toLowerCase())
     })
   }, [searchPhrase, credentials])
@@ -77,10 +79,10 @@ const ListCredentials: React.FC = () => {
 
     return (
       <View
-        key={item.id}
+        key={`${item.id}-${refreshNonce}`} // 👈 wichtiger Fix für Re-Mount
         style={[
           styles.cardWrapper,
-          { marginTop: index === 0 ? 0 : -CARD_OFFSET * 0.3 }, // leicht überlappend
+          { marginTop: index === 0 ? 0 : -CARD_OFFSET * 0.3 },
           { zIndex: filteredCredentials.length - index },
         ]}
       >
@@ -93,7 +95,9 @@ const ListCredentials: React.FC = () => {
             pressed && { opacity: 0.95, transform: [{ scale: 1.02 }] },
           ]}
         >
-          <Animated.View style={[styles.cardFrame, { transform: [{ scale }] }]}>
+          <Animated.View
+            style={[styles.cardFrame, { transform: [{ scale }] }]}
+          >
             <CredentialCard
               credential={item}
               name={tags.displayName || item.display?.name || 'Credential'}
@@ -128,7 +132,7 @@ const ListCredentials: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View key={refreshNonce} style={styles.container}>
       <SearchBar
         searchPhrase={searchPhrase}
         setSearchPhrase={setSearchPhrase}
@@ -139,9 +143,10 @@ const ListCredentials: React.FC = () => {
       <FlatList
         data={filteredCredentials.slice().reverse()}
         renderItem={renderCard}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => `${item.id}-${refreshNonce}`} // 👈 zwingt re-render
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={filteredCredentials.length > 6}
+        extraData={refreshNonce} // 👈 sorgt für frisches Layout
       />
     </View>
   )

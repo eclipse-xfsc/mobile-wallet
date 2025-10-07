@@ -158,6 +158,8 @@ const translation = {
     Version: 'Version',
     Issued: 'Ausgestellt',
     RemoveFromWallet: 'Aus dem Wallet entfernen',
+    DeleteTitle: "Credential löschen?",
+    DeleteConfirm: "Bitte bestätigen, um Credential zu entfernen."
   },
   CredentialOffer: {
     ThisIsTakingLongerThanExpected: 'Dies dauert länger als erwartet. Bitte versuchen Sie es später noch einmal.',

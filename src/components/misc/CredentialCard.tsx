@@ -1,15 +1,15 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import {
   View,
   Text,
-  Image,
-  Animated,
   ActivityIndicator,
   StyleSheet,
   TouchableOpacity,
   StyleProp,
   ViewStyle,
+  Image,
 } from 'react-native'
+import FastImage, { Source } from 'react-native-fast-image'
 
 interface CredentialCardProps {
   onPress?(): void
@@ -39,16 +39,20 @@ const CredentialCard: React.FC<CredentialCardProps> = ({
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [hasImage, setHasImage] = useState(!!backgroundImage?.uri)
-  const fadeAnim = useState(new Animated.Value(0))[0]
+  const hasEverLoaded = useRef(false) // merkt, ob das Bild schon einmal vollständig geladen wurde
 
-  const onImageLoad = () => {
+  const handleImageLoad = () => {
     setImageLoaded(true)
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start()
+    hasEverLoaded.current = true
   }
+
+  const fastImageSource: Source | undefined = hasImage
+    ? {
+        uri: backgroundImage?.uri,
+        priority: FastImage.priority.high,
+        cache: FastImage.cacheControl.immutable, // dauerhaft cachen
+      }
+    : undefined
 
   return (
     <TouchableOpacity
@@ -56,37 +60,35 @@ const CredentialCard: React.FC<CredentialCardProps> = ({
       onPress={onPress}
       style={[styles.card, { backgroundColor }, style]}
     >
-      {/* Hintergrund bei fehlendem Bild */}
+      {/* Hintergrund wenn kein Bild */}
       {!hasImage && (
         <View style={styles.noImageBackground}>
           <Text style={styles.noImageText}>No Image</Text>
         </View>
       )}
 
-      {/* Sanfter heller Placeholder während Bild lädt */}
-      {hasImage && !imageLoaded && (
-        <View style={styles.placeholderBackground} />
+      {/* Bild via FastImage */}
+      {hasImage && fastImageSource && (
+        <FastImage
+          source={fastImageSource}
+          style={styles.image}
+          resizeMode={FastImage.resizeMode.cover}
+          onLoadStart={() => {
+            if (!hasEverLoaded.current) setImageLoaded(false)
+          }}
+          onError={() => {
+            console.warn('⚠️ Fehler beim Laden des Hintergrundbilds')
+            setHasImage(false)
+          }}
+          onLoadEnd={handleImageLoad}
+        />
       )}
 
-      {/* Spinner während Bild lädt */}
-      {hasImage && showSpinner && !imageLoaded && (
+      {/* Spinner nur beim allerersten Laden */}
+      {hasImage && showSpinner && !imageLoaded && !hasEverLoaded.current && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={textColor} />
         </View>
-      )}
-
-      {/* Fade-in Background Image */}
-      {hasImage && (
-        <Animated.Image
-          source={{ uri: backgroundImage?.uri }}
-          style={[styles.image, { opacity: fadeAnim }]}
-          resizeMode="cover"
-          onLoadStart={() => {
-            setImageLoaded(false)
-          }}
-          onError={() => setHasImage(false)}
-          onLoadEnd={onImageLoad}
-        />
       )}
 
       {/* Inhalt */}
@@ -128,15 +130,11 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     borderRadius: 16,
   },
-  placeholderBackground: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#f8f8f8',
-  },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: 'rgba(255,255,255,0.3)',
     zIndex: 10,
   },
   noImageBackground: {
