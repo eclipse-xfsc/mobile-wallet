@@ -11,7 +11,7 @@ import MainStack from './MainStack';
 import OnboardingStack from './OnboardingStack';
 import { useNavigation } from '@react-navigation/core';
 import { Screens } from '../types/navigators';
-import  {NavigateForLinkType} from '../screens/Scan/Scan.tsx';
+import  {CheckLinkType} from '../screens/Scan/Scan.tsx';
 import { SdJwtVcRecordProvider } from '../agent/providers/SdJwtVcsProvider.tsx'
 import { W3cCredentialRecordProvider } from '../agent/providers/W3cCredentialsProvider.tsx'
 
@@ -47,7 +47,8 @@ const RootStack: React.FC = () => {
     (async () => {
       const handleDeepLinking = async (url: string) => {
         setDeepLinkUrl(url);
-        await NavigateForLinkType(url,navigation)  
+        console.log("Handle deep link")
+        await CheckLinkType(url,navigation)  
       };
 
       Linking.addEventListener('url', ({ url }) => handleDeepLinking(url));

@@ -13,6 +13,7 @@ import { RouteProp } from '@react-navigation/native';
 import jsQR from 'jsqr';
 import jpeg from 'jpeg-js';
 import * as UPNG from "upng-js";
+import type { NavigationProp } from '@react-navigation/native'
 
 interface ScanProps {
   navigation: StackNavigationProp<ScanStackParams, Screens.Scan>;
@@ -41,7 +42,7 @@ function base64ToBytes(base64: string): Uint8Array {
 
 export async function CheckLinkType(
   url: string,
-  navigation: StackNavigationProp<ScanStackParams, Screens.Scan>
+  navigation: NavigationProp<any>
 ): Promise<string> {
   console.log('Process Deep Link:' + url);
   if (url.startsWith('openid-credential-offer') || url.includes("credential_offer")) {
