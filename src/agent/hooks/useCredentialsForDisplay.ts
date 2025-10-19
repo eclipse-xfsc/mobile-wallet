@@ -23,8 +23,6 @@ export const useCredentialsForDisplay = () => {
     const enrichedW3c = w3cCredentialRecords.map(mapRecord)
     const enrichedSdJwt = sdJwtVcRecords.map(mapRecord)
 
-    // 🧠 Logging
-    console.log('🪪 Loaded credentials:')
     enrichedSdJwt.forEach((rec) => console.log(rec.id, rec.tags.backgroundImage))
 
     return [...enrichedW3c, ...enrichedSdJwt].sort(

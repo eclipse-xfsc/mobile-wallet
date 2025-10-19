@@ -34,7 +34,12 @@ export enum Screens {
   WalletInitialized = 'WalletInitialized',
   SetupDelay = 'SetupDelay',
   OTPGenerator = 'OTPGenerator',
-  Presentation = 'Proof',
+  Presentation = 'Presentation',
+  PresentationList = 'PresentationList',
+  PresentationRequest="PresentationRequest",
+  PresentationDisclosure="PresentationDisclosure",
+  PresentationSuccess="PresentationSuccess",
+  PresentationCredentialSelection="PresentationCredentialSelection"
 }
 
 export type OnboardingStackParams = {
@@ -93,13 +98,22 @@ export type ContactStackParams = {
 };
 
 export type CredentialStackParams = {
-  [Screens.Credentials]: undefined;
-  [Screens.CredentialDetails]: { credentialId: string };
+  [Screens.Credentials]: undefined
+  [Screens.CredentialDetails]: {
+    credentialId: string
+    mode?: 'view' | 'disclosure'
+    descId?: string
+    isPresentationMode?: boolean
+    enableDisclosure?: boolean
+  }
   [Screens.CredentialOfferOid4VC]: {
-    url: string;
-  };
-  [Screens.Home]: undefined; 
-};
+    url: string
+  }
+  [Screens.Home]: undefined
+  [Screens.Presentation]: {
+    url?: string
+  }
+}
 
 export type HomeStackParams = {
   [Screens.Home]: undefined;
@@ -112,6 +126,9 @@ export type HomeStackParams = {
   };
   [Screens.CredentialOfferOid4VC]: {
     url: string;
+  };
+  [Screens.Presentation]: {
+    url?: string;
   };
 };
 
@@ -138,11 +155,33 @@ export type OtpStackParams = {
   };
 };
 
+export interface DisclosureField {
+  path: string
+  purpose?: string
+  value?: any
+  disclose: boolean
+}
+
+
 export type PresentationStackParams = {
-  [Screens.OTPGenerator]: {
-    url?: string;
-  };
-};
+  [Screens.PresentationList]: undefined
+  [Screens.PresentationRequest]: { presentationId?: string }
+  [Screens.PresentationCredentialSelection]: { presentationId?: string }
+   [Screens.Presentation]: {
+    presentationId: string
+    selectedCredentials: Record<string, any>
+    selectedDisclosures?: Record<string, any>
+  }
+  [Screens.PresentationDisclosure]: {
+    presentationId: string
+    disclosureOptions: Record<string, DisclosureField[]>
+  }
+  [Screens.PresentationSuccess]: {
+     presentationId: string 
+  }
+
+}
+
 
 
 export type SettingStackParams = {
@@ -171,6 +210,7 @@ export type TabStackParams = {
   [TabStacks.CredentialStack]: NavigatorScreenParams<CredentialStackParams>;
   [TabStacks.SettingsStack]: NavigatorScreenParams<SettingStackParams>;
   [TabStacks.OtpStack]: NavigatorScreenParams<ScanStackParams>;
+  [TabStacks.PresentationStack]: NavigatorScreenParams<PresentationStackParams>;
 };
 
 export enum Stacks {
@@ -181,4 +221,5 @@ export enum Stacks {
   ScanStack = 'Scan Stack',
   SettingStack = 'Settings Stack',
   ConnectionStack = 'Connection Stack',
+  PresentationStack = 'Presentation Stack',
 }

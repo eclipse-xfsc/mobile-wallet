@@ -9,11 +9,13 @@ import {
   View,
   Alert,
   Pressable,
+  Switch,
+  TouchableOpacity,
 } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useAgent } from '@credo-ts/react-hooks'
 import { W3cCredentialRepository, SdJwtVcRepository } from '@credo-ts/core'
-import { Buffer } from 'buffer';
+import { Buffer } from 'buffer'
 import Accordion from '../../components/accordion/Accordion'
 import CredentialCard from '../../components/misc/CredentialCard'
 import { ColorPallet } from '../../theme/theme'
@@ -27,11 +29,14 @@ type CredentialDetailsProps = StackScreenProps<
 
 const CredentialDetails: React.FC<CredentialDetailsProps> = ({ route, navigation }) => {
   const { t } = useTranslation()
-  const { credentialId } = route.params
+  const { credentialId, isPresentationMode = false, enableDisclosure = false } = route.params
   const { agent } = useAgent()
 
   const [credential, setCredential] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
+  const [attributes, setAttributes] = useState<Record<string, any>>({})
+  const [disclosures, setDisclosures] = useState<Record<string, boolean>>({})
+  const [expanded, setExpanded] = useState(true)
 
   // ---------- Lade Credential ----------
   useEffect(() => {
@@ -41,7 +46,6 @@ const CredentialDetails: React.FC<CredentialDetailsProps> = ({ route, navigation
       try {
         console.log('🔍 Lade Credential:', credentialId)
 
-        // Versuch W3C zuerst
         let record = null
         const w3cRepo = agent.dependencyManager.resolve(W3cCredentialRepository)
         const sdjwtRepo = agent.dependencyManager.resolve(SdJwtVcRepository)
@@ -59,16 +63,21 @@ const CredentialDetails: React.FC<CredentialDetailsProps> = ({ route, navigation
         }
 
         if (!record) {
-          warningToast(t<string>('CredentialOffer.CredentialNotFound'))
+          warningToast('Credential nicht gefunden')
           navigation.goBack()
           return
         }
 
-        console.log('📦 Credential Record:', record)
-        console.log('🏷️ Tags:', record.getTags?.())
         setCredential(record)
+        const attrs = extractAttributes(record)
+        setAttributes(attrs)
+
+        // Disclosure switches default: all ON
+        const defaults: Record<string, boolean> = {}
+        Object.keys(attrs).forEach((k) => (defaults[k] = true))
+        setDisclosures(defaults)
       } catch (e) {
-        console.error('❌ Fehler beim Laden der Credential:', e)
+        console.error('❌ Fehler beim Laden:', e)
         errorToast('Credential konnte nicht geladen werden')
       } finally {
         setLoading(false)
@@ -76,59 +85,87 @@ const CredentialDetails: React.FC<CredentialDetailsProps> = ({ route, navigation
     }
 
     void loadCredential()
-  }, [agent, credentialId, navigation, t])
+  }, [agent, credentialId, navigation])
 
-  // ---------- Delete Credential ----------
+  // ---------- Attribute extrahieren ----------
+  const extractAttributes = (cred: any): Record<string, any> => {
+    // 🧩 SD-JWT
+    if ('compactSdJwtVc' in cred && typeof cred.compactSdJwtVc === 'string') {
+      try {
+        const [headerB64, payloadB64] = cred.compactSdJwtVc.split('.')
+        const payload = JSON.parse(Buffer.from(payloadB64, 'base64').toString('utf-8'))
+
+        const attrs: Record<string, any> = {}
+
+        if (payload.cnf?.kid) attrs['Key ID'] = payload.cnf.kid
+        if (payload.vct) attrs['VC Type'] = payload.vct
+
+        const disclosures = cred.compactSdJwtVc.split('~').slice(1)
+        disclosures.forEach((d: string) => {
+          try {
+            const decoded = JSON.parse(Buffer.from(d, 'base64').toString('utf-8'))
+            if (Array.isArray(decoded) && decoded.length >= 3) {
+              const [, key, value] = decoded
+              attrs[key] = value
+            }
+          } catch (err) {
+            console.warn('⚠️ Disclosure decode failed:', err)
+          }
+        })
+        return attrs
+      } catch (err) {
+        console.error('❌ Fehler beim Dekodieren von SD-JWT:', err)
+        return {}
+      }
+    }
+
+    // 🧩 W3C VC
+    if (cred.credential?.credentialSubject) {
+      return cred.credential.credentialSubject
+    }
+
+    return {}
+  }
+
+  // ---------- Delete ----------
   const handleDelete = useCallback(async () => {
     if (!agent || !credential) return
 
-    Alert.alert(
-      t<string>('CredentialDetails.DeleteTitle') || 'Delete Credential',
-      t<string>('CredentialDetails.DeleteConfirm') ||
-        'Are you sure you want to delete this credential?',
-      [
-        {
-          text: t<string>('Global.Cancel') || 'Cancel',
-          style: 'cancel',
+    Alert.alert('Löschen', 'Credential wirklich löschen?', [
+      { text: 'Abbrechen', style: 'cancel' },
+      {
+        text: 'Löschen',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const isSdJwt = 'compactSdJwtVc' in credential
+            const repo = isSdJwt
+              ? agent.dependencyManager.resolve(SdJwtVcRepository)
+              : agent.dependencyManager.resolve(W3cCredentialRepository)
+
+            await repo.delete(agent.context, credential)
+            successToast('Credential gelöscht')
+            navigation.goBack()
+          } catch (err) {
+            console.error('❌ Fehler beim Löschen:', err)
+            errorToast('Fehler beim Löschen')
+          }
         },
-        {
-          text: t<string>('CredentialDetails.RemoveFromWallet') || 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const isSdJwt = 'compactSdJwtVc' in credential
-              const repository = isSdJwt
-                ? agent.dependencyManager.resolve(SdJwtVcRepository)
-                : agent.dependencyManager.resolve(W3cCredentialRepository)
+      },
+    ])
+  }, [agent, credential, navigation])
 
-              await repository.delete(agent.context, credential)
-
-              successToast(t<string>('CredentialDetails.Deleted'))
-              navigation.goBack()
-            } catch (err) {
-              console.error('❌ Fehler beim Löschen:', err)
-              errorToast(t<string>('CredentialDetails.DeleteError'))
-            }
-          },
-        },
-      ]
-    )
-  }, [agent, credential, navigation, t])
-
-  // ---------- Ladeanzeige ----------
+  // ---------- UI ----------
   if (loading || !credential) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={ColorPallet.brand.primary} />
-        <Text style={styles.loadingText}>Loading credential...</Text>
+        <Text style={styles.loadingText}>Lade Credential...</Text>
       </View>
     )
   }
 
-  // ---------- Anzeige aus Tags ----------
   const tags = credential.getTags?.() ?? {}
-  console.log('🏷️ Tags (via getTags):', tags)
-
   const displayName = tags.displayName || 'Credential'
   const displayIssuer = tags.displayIssuer || 'Unknown'
   const description = tags.displayDescription || ''
@@ -137,12 +174,14 @@ const CredentialDetails: React.FC<CredentialDetailsProps> = ({ route, navigation
   const backgroundImage =
     tags.backgroundImage ? { uri: tags.backgroundImage } : undefined
 
-  console.log('🖼️ Background Image:', backgroundImage)
+  const isSdJwt = 'compactSdJwtVc' in credential
+  const disclosureMode = isPresentationMode && isSdJwt && enableDisclosure
 
-  // ---------- Render ----------
+  const toggleDisclosure = (key: string) =>
+    setDisclosures((prev) => ({ ...prev, [key]: !prev[key] }))
+
   return (
     <ScrollView contentContainerStyle={styles.scrollView}>
-      {/* ---------- Credential Card ---------- */}
       <View style={styles.credentialCardView}>
         <CredentialCard
           credential={credential}
@@ -156,102 +195,53 @@ const CredentialDetails: React.FC<CredentialDetailsProps> = ({ route, navigation
         />
       </View>
 
-      {/* ---------- INFO ---------- */}
+      {/* INFO */}
       <View style={Platform.OS === 'android' ? styles.card : styles.cardIos}>
-        <Accordion title="Info" innerAccordion={false}>
+        <Accordion title="Attribute" innerAccordion={false} defaultExpanded>
           <View>
-            <View style={styles.innerContainer}>
-              <Text style={styles.attribute}>Credential ID</Text>
-              <Text style={styles.attribute}>{credential.id}</Text>
-            </View>
-            <View style={styles.divider} />
+            {Object.keys(attributes).length === 0 ? (
+              <Text style={styles.noActivitiesText}>Keine Attribute gefunden</Text>
+            ) : (
+              Object.entries(attributes).map(([key, value]) => (
+                <View key={key} style={styles.attributeRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.attributeKey}>{key}</Text>
+                    <Text style={styles.attributeValue}>
+                      {typeof value === 'object'
+                        ? JSON.stringify(value, null, 2)
+                        : String(value)}
+                    </Text>
+                  </View>
 
-            {/* Attribute anzeigen */}
-            {(() => {
-              // ✅ Für SD-JWT
-              if ('compactSdJwtVc' in credential && typeof credential.compactSdJwtVc === 'string') {
-                try {
-                  const [headerB64, payloadB64, signature, ...disclosuresRaw] =
-                    credential.compactSdJwtVc.split(/[.~]/g).filter(Boolean)
-
-                  const payload = JSON.parse(
-                    Buffer.from(payloadB64, 'base64').toString('utf-8')
-                  )
-
-                  const attributes: Record<string, any> = {}
-
-                  // ✅ Extract "cnf.kid" → "Key Id"
-                  if (payload.cnf?.kid) attributes['Key Id'] = payload.cnf.kid
-
-                  // ✅ Extract "vct" → "VC Type"
-                  if (payload.vct) attributes['VC Type'] = payload.vct
-
-                  // ✅ Decode disclosures
-                  const disclosures = credential.compactSdJwtVc.split('~').slice(1)
-                  disclosures.forEach((disclosure) => {
-                    try {
-                      const decoded = JSON.parse(
-                        Buffer.from(disclosure, 'base64').toString('utf-8')
-                      )
-                      if (Array.isArray(decoded) && decoded.length >= 3) {
-                        const [, key, value] = decoded
-                        attributes[key] = value
-                      }
-                    } catch (err) {
-                      console.warn('⚠️ Disclosure decode failed:', err)
-                    }
-                  })
-
-                  return Object.entries(attributes).length ? (
-                    Object.entries(attributes).map(([key, value]) => (
-                      <View key={key} style={styles.innerContainer}>
-                        <Text style={styles.attribute}>{key}</Text>
-                        <Text style={styles.attribute}>
-                          {typeof value === 'object'
-                            ? JSON.stringify(value, null, 2)
-                            : String(value)}
-                        </Text>
-                      </View>
-                    ))
-                  ) : (
-                    <Text style={styles.noActivitiesText}>No attributes found</Text>
-                  )
-                } catch (err) {
-                  console.error('❌ Fehler beim Dekodieren von SD-JWT:', err)
-                  return (
-                    <Text style={styles.noActivitiesText}>Failed to decode SD-JWT</Text>
-                  )
-                }
-              }
-
-              // ✅ Für klassische W3C Credentials
-              if (credential.credential?.credentialSubject) {
-                return Object.entries(credential.credential.credentialSubject).map(
-                  ([key, value]) => (
-                    <View key={key} style={styles.innerContainer}>
-                      <Text style={styles.attribute}>{key}</Text>
-                      <Text style={styles.attribute}>
-                        {typeof value === 'object'
-                          ? JSON.stringify(value, null, 2)
-                          : String(value)}
-                      </Text>
-                    </View>
-                  )
-                )
-              }
-
-              return <Text style={styles.noActivitiesText}>No attributes found</Text>
-            })()}
+                  {disclosureMode && (
+                    <Switch
+                      value={disclosures[key]}
+                      onValueChange={() => toggleDisclosure(key)}
+                      trackColor={{ false: '#ccc', true: ColorPallet.brand.primary }}
+                    />
+                  )}
+                </View>
+              ))
+            )}
           </View>
         </Accordion>
       </View>
 
-      {/* ---------- DELETE BUTTON ---------- */}
-      <Pressable onPress={handleDelete} style={styles.deleteButton}>
-        <Text style={styles.deleteText}>
-          {t<string>('CredentialDetails.RemoveFromWallet') || 'Delete Credential'}
-        </Text>
-      </Pressable>
+      {/* Disclosure Hinweis */}
+      {disclosureMode && (
+        <View style={styles.disclosureHint}>
+          <Text style={styles.disclosureText}>
+            Wählen Sie aus, welche Attribute für die Präsentation offengelegt werden sollen.
+          </Text>
+        </View>
+      )}
+
+      {/* Delete Button */}
+      {!isPresentationMode && (
+        <Pressable onPress={handleDelete} style={styles.deleteButton}>
+          <Text style={styles.deleteText}>Aus Wallet entfernen</Text>
+        </Pressable>
+      )}
     </ScrollView>
   )
 }
@@ -260,13 +250,8 @@ export default CredentialDetails
 
 // ---------- Styles ----------
 const styles = StyleSheet.create({
-  scrollView: {
-    paddingBottom: 40,
-  },
-  credentialCardView: {
-    marginHorizontal: 15,
-    marginTop: 16,
-  },
+  scrollView: { paddingBottom: 40 },
+  credentialCardView: { marginHorizontal: 15, marginTop: 16 },
   card: {
     backgroundColor: ColorPallet.baseColors.white,
     borderRadius: 10,
@@ -288,36 +273,19 @@ const styles = StyleSheet.create({
     width: '90%',
     alignSelf: 'center',
   },
-  innerContainer: {
+  attributeRow: {
     flexDirection: 'row',
-    marginVertical: 5,
-  },
-  attribute: {
-    width: '50%',
-    color: ColorPallet.baseColors.black,
-  },
-  divider: {
-    borderBottomColor: ColorPallet.baseColors.lightGrey,
-    borderBottomWidth: 1,
-    width: '100%',
-    marginVertical: 5,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: ColorPallet.grayscale.white,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    paddingVertical: 6,
   },
-  loadingText: {
-    fontSize: 16,
-    marginTop: 10,
-    color: ColorPallet.baseColors.black,
-  },
-  noActivitiesText: {
-    textAlign: 'center',
-    color: ColorPallet.baseColors.lightGrey,
-    marginVertical: 10,
-  },
+  attributeKey: { fontWeight: '600', fontSize: 14, color: '#333' },
+  attributeValue: { fontSize: 13, color: '#555' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 10, color: ColorPallet.baseColors.black },
+  noActivitiesText: { color: ColorPallet.baseColors.lightGrey, textAlign: 'center' },
   deleteButton: {
     marginTop: 30,
     marginBottom: 50,
@@ -327,10 +295,14 @@ const styles = StyleSheet.create({
     width: '90%',
     alignSelf: 'center',
   },
-  deleteText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '600',
+  deleteText: { color: '#fff', textAlign: 'center', fontWeight: '600', fontSize: 16 },
+  disclosureHint: {
+    backgroundColor: '#eef6ff',
+    borderRadius: 8,
+    padding: 10,
+    width: '90%',
+    alignSelf: 'center',
+    marginTop: 10,
   },
+  disclosureText: { fontSize: 13, color: '#333', textAlign: 'center' },
 })

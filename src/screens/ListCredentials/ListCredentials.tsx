@@ -7,6 +7,7 @@ import {
   Dimensions,
   Pressable,
   FlatList,
+  Switch
 } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useNavigation, useFocusEffect, useIsFocused } from '@react-navigation/native'

@@ -10,7 +10,7 @@ import {
 } from '@credo-ts/anoncreds'
 import { OpenId4VcHolderModule } from '@credo-ts/openid4vc'
 import { AskarModule } from '@credo-ts/askar'
-import { SdJwtVcModule } from '@credo-ts/sd-jwt-vc'
+
 import {
   ConnectionsModule,
   CredentialsModule,
@@ -47,6 +47,7 @@ import { getAppGuid, setAppGuid } from '../utils/keychain'
 import { agentDependencies } from '@credo-ts/react-native'
 import { useAgent } from '@credo-ts/react-hooks'
 import uuid from 'react-native-uuid'
+import { GenericRecordsModule } from '@credo-ts/core/build/modules/generic-records'
 
 export const buildModules = () => {
   const modules: Record<string, any> = {}
@@ -57,6 +58,7 @@ export const buildModules = () => {
   // --- OID4VC ---
   if (features.oid4vc?.holder) {
     modules.openId4VcHolder = new OpenId4VcHolderModule()
+    modules.genericRecords= new GenericRecordsModule()
   }
 
   // --- Indy ---

@@ -274,12 +274,19 @@ const translation = {
     ImportWallet: 'Brieftasche importieren',
     ContactDetails: 'Verbindungsdetails',
     ViewMnemonic: 'Mnemonic ansehen',
+    OTPTokens: 'OTP Tokens',
+    PresentationList:"Nachweisanfragen"
   },
   SearchBar: {
     placeholder: 'Suche'
   },
   Otp: {
     NoTokens: "Keine Token registriert"
+  },
+  PresentationList: {
+    Active:"Aktive Anfragen",
+    Expired: "Abgelaufene Anfragen",
+    NoActive: "Keine Aktiven Anfragen"
   }
 };
 export default translation;

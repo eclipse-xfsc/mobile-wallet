@@ -274,12 +274,19 @@ const translation = {
     ImportWallet: 'Importer un portefeuille',
     ContactDetails: 'Connection Details',
     ViewMnemonic: 'Voir le mnémonique',
+    OTPTokens: 'OTP Tokens',
+    PresentationList:"Demandes de présentation"
   },
   SearchBar: {
     placeholder: 'Rechercher'
   },
   Otp: {
     NoTokens: "Aucun jeton enregistré"
+  }, 
+  PresentationList: {
+    Active:"Demandes actives",
+    Expired: "Demandes expirées",
+    NoActive: "Aucune demande active"
   }
 };
 export default translation;

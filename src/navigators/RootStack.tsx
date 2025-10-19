@@ -1,73 +1,109 @@
-import { Agent } from '@credo-ts/core';
-import AgentProvider from '@credo-ts/react-hooks';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Linking } from 'react-native';
-import Toast from 'react-native-toast-message';
-import UserInactivity from 'react-native-user-inactivity';
-import { ToastType } from '../components/toast/BaseToast';
-import { MainStackContext } from '../utils/helpers';
-import MainStack from './MainStack';
-import OnboardingStack from './OnboardingStack';
-import { useNavigation } from '@react-navigation/core';
-import { Screens } from '../types/navigators';
-import  {CheckLinkType} from '../screens/Scan/Scan.tsx';
-import { SdJwtVcRecordProvider } from '../agent/providers/SdJwtVcsProvider.tsx'
-import { W3cCredentialRecordProvider } from '../agent/providers/W3cCredentialsProvider.tsx'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { Linking } from 'react-native'
+import { useTranslation } from 'react-i18next'
+import { useNavigation } from '@react-navigation/core'
+import Toast from 'react-native-toast-message'
+import UserInactivity from 'react-native-user-inactivity'
+import AgentProvider from '@credo-ts/react-hooks'
+import type { Agent } from '@credo-ts/core'
+
+import { ToastType } from '../components/toast/BaseToast'
+import { MainStackContext } from '../utils/helpers'
+import MainStack from './MainStack'
+import OnboardingStack from './OnboardingStack'
+import { Screens } from '../types/navigators'
+import { CheckLinkType } from '../screens/Scan/Scan'
+import { SdJwtVcRecordProvider } from '../agent/providers/SdJwtVcsProvider'
+import { W3cCredentialRecordProvider } from '../agent/providers/W3cCredentialsProvider'
+import { setGlobalAgent } from '../agent/agentSingleton'
 
 const RootStack: React.FC = () => {
-  const navigation = useNavigation();
-  const { t } = useTranslation();
-  const [authenticated, setAuthenticated] = useState(false);
-  const [deepLinkUrl, setDeepLinkUrl] = useState<string | null>();
+  const navigation = useNavigation()
+  const { t } = useTranslation()
 
-  const [agent, setAgent] = useState<Agent | undefined>();
+  const [agent, setAgent] = useState<Agent | undefined>()
+  const [authenticated, setAuthenticated] = useState(false)
+  const [deepLinkUrl, setDeepLinkUrl] = useState<string | null>(null)
 
-  const onActivityChange = (isActive: boolean) => {
-    if (!isActive) {
-      shutDownAgent();
-    }
-  };
-
+  // 🔐 Wird aufgerufen, wenn der User inaktiv ist
   const shutDownAgent = useCallback(async () => {
-    if (agent === undefined || !agent.isInitialized) {
-      return;
+    console.log('🛑 Inactivity detected → closing wallet')
+    if (!agent) return
+
+    try {
+      if (agent.wallet?.isInitialized) {
+        await agent.wallet.close()
+        console.log('🔒 Wallet closed due to inactivity (Agent kept alive)')
+      }
+    } catch (e) {
+      console.error('❌ Error closing wallet:', e)
     }
 
-    setAuthenticated(false);
-    await agent.shutdown();
+    setAuthenticated(false)
     Toast.show({
       type: ToastType.Info,
       text1: t<string>('Toasts.Info'),
       text2: t<string>('Global.UserInactivity'),
-    });
-  }, [agent, t]);
+    })
+  }, [agent, t])
 
+  // 👀 Reaktion auf Aktivitätsänderungen
+  const onActivityChange = (isActive: boolean) => {
+    if (!isActive) {
+      void shutDownAgent()
+    }
+  }
+
+  // 🔗 Deep Linking Event Listener
   useEffect(() => {
-    (async () => {
-      const handleDeepLinking = async (url: string) => {
-        setDeepLinkUrl(url);
-        console.log("Handle deep link")
-        await CheckLinkType(url,navigation)  
-      };
+    const handleDeepLinking = async (url: string) => {
+      setDeepLinkUrl(url)
 
-      Linking.addEventListener('url', ({ url }) => handleDeepLinking(url));
-      const initialUrl = await Linking.getInitialURL();
-      if (initialUrl) {
-        handleDeepLinking(initialUrl);
+      // 👇 Warte, bis Agent verfügbar ist
+      if (!agent) {
+        console.warn('⚠️ Deep link received before agent init — delaying...')
+        const interval = setInterval(async () => {
+          if (agent) {
+            clearInterval(interval)
+            await CheckLinkType(url, navigation, agent)
+          }
+        }, 500)
+      } else {
+        await CheckLinkType(url, navigation, agent)
       }
-    })();
-  }, []);
+    }
 
+    const subscription = Linking.addEventListener('url', ({ url }) =>
+      handleDeepLinking(url)
+    )
+
+    ;(async () => {
+      const initialUrl = await Linking.getInitialURL()
+      if (initialUrl) await handleDeepLinking(initialUrl)
+    })()
+
+    return () => subscription.remove()
+  }, [agent, navigation])
+
+  // 🔁 Context für tieferliegende Komponenten
   const mainStackProviderValue = useMemo(
     () => ({
       setAuthenticated,
       deepLinkUrl,
       resetDeepLinkUrl: () => setDeepLinkUrl(null),
     }),
-    [setAuthenticated, deepLinkUrl, setDeepLinkUrl],
-  );
+    [deepLinkUrl]
+  )
 
+  // 🧠 Agent global registrieren, sobald er gesetzt ist
+  useEffect(() => {
+    if (agent) {
+      setGlobalAgent(agent)
+      console.log('🌐 Global agent registered')
+    }
+  }, [agent])
+
+  // 🧭 Render
   return authenticated && agent ? (
     <AgentProvider agent={agent}>
       <W3cCredentialRecordProvider agent={agent}>
@@ -81,12 +117,12 @@ const RootStack: React.FC = () => {
               <MainStack />
             </MainStackContext.Provider>
           </UserInactivity>
-       </SdJwtVcRecordProvider>
-       </W3cCredentialRecordProvider>
+        </SdJwtVcRecordProvider>
+      </W3cCredentialRecordProvider>
     </AgentProvider>
   ) : (
     <OnboardingStack setAgent={setAgent} setAuthenticated={setAuthenticated} />
-  );
-};
+  )
+}
 
-export default RootStack;
+export default RootStack

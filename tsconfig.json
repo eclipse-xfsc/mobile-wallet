@@ -4,6 +4,7 @@
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig.json to read more about this file */
     "types": ["node", "react", "react-native"], 
+    "include": ["src", "global.d.ts"],
     "typeRoots": ["./node_modules/@types", "./src/types"], 
     /* Completeness */
     "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
