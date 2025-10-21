@@ -167,10 +167,9 @@ export type PresentationStackParams = {
   [Screens.PresentationList]: undefined
   [Screens.PresentationRequest]: { presentationId?: string }
   [Screens.PresentationCredentialSelection]: { presentationId?: string }
-   [Screens.Presentation]: {
+  [Screens.Presentation]: {
     presentationId: string
     selectedCredentials: Record<string, any>
-    selectedDisclosures?: Record<string, any>
   }
   [Screens.PresentationDisclosure]: {
     presentationId: string

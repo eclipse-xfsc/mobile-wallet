@@ -13,6 +13,7 @@ const Language = () => {
     { id: Locales.en, value: t<string>('Language.English') },
     { id: Locales.fr, value: t<string>('Language.French') },
     { id: Locales.de, value: t<string>('Language.German') },
+    { id: Locales.es, value: t<string>('Language.Espanol') },
   ];
 
   /**

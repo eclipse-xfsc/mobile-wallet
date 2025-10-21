@@ -32,15 +32,21 @@ const translation = {
     from: 'von',
     Yes: 'Ja',
     No: 'Nein',
+    Expire: 'Abgelaufen',
+    Active: 'Aktiv',
+    Expires: 'Läuft ab in',
+    NoExpire: 'Kein Ablaufdatum',
     ThisDecisionCannotBeChanged: 'Nicht änderbar.',
     ZeroRecords: 'Keine Datensätze verfügbar.',
     ImportWallet: 'Wallet importieren.',
     UserInactivity: 'Abgemeldet aufgrund von Inaktivität',
+    Summary:'Zusammenfassung'
   },
   Language: {
     English: 'Englisch',
     French: 'Französisch',
     German: 'Deutsch',
+    Espanol: 'Spanisch',
   },
   Registration:{
     RegisterAgain: 'Bitte registrieren Sie sich erneut',
@@ -286,7 +292,52 @@ const translation = {
   PresentationList: {
     Active:"Aktive Anfragen",
     Expired: "Abgelaufene Anfragen",
-    NoActive: "Keine Aktiven Anfragen"
+    NoActive: "Keine Aktiven Anfragen",
+    NoActiveRequests:'Keine aktiven Anfragen.',
+    NoExpiredRequests:'Keine abgelaufenen Anfragen',
+    DeleteRecord: 'Löschen bestätigen',
+    DeleteRecordQuestion:'Willst du diesen Request wirklich löschen?',
+    DeleteRecordError: 'Der Datensatz konnte nicht gelöscht werden.'
+  },
+  Presentation: {
+    LoadError:'Fehler beim Laden der Präsentationsanfrage',
+    NoRecord:'Präsentationsanfrage nicht gefunden',
+    CouldNotLoadRequest:'Anfrage konnte nicht geladen werden',
+    NoOid4VPUrlFound:'Keine OID4VP URL gefunden',
+    RequestEmpty:'Request leer',
+    ErrorResolveRequest:'Fehler beim Auflösen des Requests',
+    RequestExpired:'Anfrage abgelaufen',
+    RequestError:'Die Präsentationsanfrage ist nicht mehr gültig oder wurde vom Anfragenden zurückgezogen.',
+    NoPresentationDefinitionFound:'Keine Presentation Definition im Request gefunden',
+    NoCredentialsFound:'Es wurden keine gültigen Credentials gefunden.',
+    NoCredentials:'Keine Nachweise gefunden',
+    PresentationSendSuccessfully:'Präsentation erfolgreich gesendet',
+    ErrorSendingCredentials:'Fehler beim Senden der Präsentation',
+    ConfirmSend:'Senden bestätigen',
+    NoValidPresentationFound:'Keine gültige Präsentationsanfrage gefunden.',
+    SelectedCredentials: 'Ausgewählte Credentials',
+    CheckPresentation:'Präsentation überprüfen',
+    PresentationSend:'Presentation übermittelt!',
+    SuccessSubtitle:'Die Übertragung war erfolgreich.',
+    BacktoOverview:'Zurück zur Übersicht'
+  },
+  PresentationSelection: {
+    SingleSelection:'Einzelnachweis erforderlich',
+    MultiSelection:'Mehrfachauswahl erlaubt',
+    NoCredentialsFound:'Keine passenden Nachweise gefunden.',
+    AutomaticallySelected:'Automatisch ausgewählt',
+    SelectCredentials:'Nachweise auswählen',
+    SelectCredentialsHint:'Wählen Sie passende Nachweise für jede Anforderung.',
+    Request:'Anforderung'
+  },
+  Scan: {
+    SelectImage:'Bitte Bild aus Galerie auswählen',
+    ImageLoadError: 'Fehler beim Laden des Bildes',
+    NoQrCode: 'Kein QR Code erkannt.',
+    ImageSupported:'Nur JPG und PNG unterstützt',
+    NoImageSelected: 'Kein Bild ausgewählt',
+    EmptyQr:'Kein QR erkannt',
+    ErrorProcessingOid4VPLink:'Fehler beim Verarbeiten des OID4VP-Links:'
   }
 };
 export default translation;

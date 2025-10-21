@@ -10,7 +10,7 @@ import {
 } from 'react-native'
 import { useAgent } from '@credo-ts/react-hooks'
 import { useTranslation } from 'react-i18next'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation,useFocusEffect } from '@react-navigation/native'
 import { ColorPallet } from '../../theme/theme'
 import { Screens } from '../../types/navigators'
 import { Oid4vpRepository, Oid4vpRecordContent } from '../../storage/Oid4vpRepository'
@@ -33,7 +33,6 @@ const PresentationList: React.FC = () => {
     try {
       const all = await repo.getAll(agent)
       const now = new Date()
-      // berechne Status (zur Sicherheit)
       const mapped = all.map((r) => {
         const expiresAt = r.expiresAt
         const isExpired = !expiresAt || new Date(expiresAt).getTime() < now.getTime()
@@ -56,13 +55,19 @@ const PresentationList: React.FC = () => {
     void loadRecords()
   }, [loadRecords])
 
+  useFocusEffect(
+    useCallback(() => {
+      void loadRecords()
+    }, [loadRecords])
+  )
+
   // 🗑️ Record löschen
   const handleDelete = useCallback(
     async (id: string) => {
-      Alert.alert('Löschen bestätigen', 'Willst du diesen Request wirklich löschen?', [
-        { text: 'Abbrechen', style: 'cancel' },
+      Alert.alert(t<string>('PresentationList.DeleteRecord'), t<string>('PresentationList.DeleteRecordQuestion'), [
+        { text: t<string>('Global.Cancel'), style: 'cancel' },
         {
-          text: 'Löschen',
+          text: t<string>('Global.Delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -70,7 +75,7 @@ const PresentationList: React.FC = () => {
               setRecords((prev) => prev.filter((r) => r.id !== id))
             } catch (e) {
               console.error('❌ Fehler beim Löschen:', e)
-              Alert.alert('Fehler', 'Der Datensatz konnte nicht gelöscht werden.')
+              Alert.alert(t<string>('Global.Failure'), t<string>('PresentationList.DeleteRecordError'))
             }
           },
         },
@@ -93,7 +98,7 @@ const PresentationList: React.FC = () => {
           style={styles.cardContent}
           disabled={expired}
           onPress={() =>
-            navigation.navigate(Screens.PresentationRequest as never, {presentationId: item.id } as never)
+            navigation.navigate(Screens.PresentationRequest as never, { presentationId: item.id } as never)
           }
         >
           <View style={styles.row}>
@@ -101,7 +106,7 @@ const PresentationList: React.FC = () => {
               {item.clientName || 'Unknown Verifier'}
             </Text>
             <Text style={[styles.status, expired ? styles.expired : styles.active]}>
-              {expired ? 'Expired' : 'Active'}
+              {expired ? t<string>('Global.Expire') : t<string>('Global.Active')}
             </Text>
           </View>
 
@@ -115,8 +120,8 @@ const PresentationList: React.FC = () => {
 
           <Text style={styles.subtitle}>
             {item.expiresAt
-              ? `Expires: ${new Date(item.expiresAt).toLocaleString()}`
-              : 'No expiration'}
+              ? t<string>('Global.Expires')+`: ${new Date(item.expiresAt).toLocaleString()}`
+              : t<string>('Global.NoExpire')}
           </Text>
         </TouchableOpacity>
 
@@ -173,7 +178,7 @@ const PresentationList: React.FC = () => {
         ListEmptyComponent={
           <View style={styles.center}>
             <Text style={styles.emptyText}>
-              {activeTab === 'active' ? 'No active requests' : 'No expired requests'}
+              {activeTab === 'active' ? t<string>('PresentationList.NoActiveRequests') : t<string>('PresentationList.NoExpiredRequests') }
             </Text>
           </View>
         }

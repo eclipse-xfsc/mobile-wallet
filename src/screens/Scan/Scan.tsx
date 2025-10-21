@@ -17,6 +17,7 @@ import type { Agent } from '@credo-ts/core'
 import { v4 as uuidv4 } from 'uuid'
 import PresentationStack from '../../navigators/PresentationStack'
 import { Oid4vpRepository } from '../../storage/Oid4vpRepository'
+import { useTranslation } from 'react-i18next';
 
 interface ScanProps {
   navigation: StackNavigationProp<ScanStackParams, Screens.Scan>
@@ -45,7 +46,8 @@ function base64ToBytes(base64: string): Uint8Array {
 export async function CheckLinkType(
   url: string,
   navigation: NavigationProp<any>,
-  agent: Agent
+  agent: Agent,
+  t: (key: string) => string 
 ): Promise<string> {
   console.log('🔗 Process Deep Link:', url)
   // 🪪 Credential Offer (OID4VC)
@@ -62,7 +64,6 @@ export async function CheckLinkType(
 
     try {
       const repo = new Oid4vpRepository()
-
       // resolve + save direkt hier:
       const request = await agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(url)
       const id = await repo.save(agent, { url, request })
@@ -74,7 +75,7 @@ export async function CheckLinkType(
         } as never)
       }
     } catch (e) {
-      console.error('❌ Fehler beim Verarbeiten des OID4VP-Links:', e)
+      console.error('❌ '+t<string>('Scan.ErrorProcessingOid4VPLink'), e)
     }
 
     return ''
@@ -101,14 +102,14 @@ const Scan: React.FC<ScanProps> = ({ navigation, route }) => {
   const mode = route.params?.mode ?? 'camera'
   const [qrCodeScanError, setQrCodeScanError] = useState<QrCodeScanError | null>(null)
   const [urlInput, setUrl] = useState('')
-
+  const { t } = useTranslation();
   const processUrl = async (url: string) => {
     setQrCodeScanError(null)
     if (url === '') {
-      return warningToast('QR darf nicht leer sein')
+      return warningToast(t<string>('Scan.EmptyQr'))
     }
-
-    const linkType = await CheckLinkType(url, navigation, agent)
+    
+    const linkType = await CheckLinkType(url, navigation, agent,t)
 
     if (linkType !== '') {
       try {
@@ -132,7 +133,7 @@ const Scan: React.FC<ScanProps> = ({ navigation, route }) => {
   const pickImageAndScan = async () => {
     const result = await launchImageLibrary({ mediaType: 'photo', includeBase64: true })
     if (!result.assets || !result.assets[0]?.base64) {
-      Alert.alert('Kein Bild ausgewählt')
+      Alert.alert(t<string>('Scan.NoImageSelected'))
       return
     }
 
@@ -156,7 +157,7 @@ const Scan: React.FC<ScanProps> = ({ navigation, route }) => {
         height = img.height
         rgba = new Uint8ClampedArray(frames[0])
       } else {
-        Alert.alert('Nur JPG und PNG unterstützt')
+        Alert.alert(t<string>('Scan.ImageSupported'))
         return
       }
 
@@ -165,11 +166,11 @@ const Scan: React.FC<ScanProps> = ({ navigation, route }) => {
       if (code) {
         processUrl(code.data)
       } else {
-        Alert.alert('Kein QR-Code erkannt')
+        Alert.alert(t<string>('Scan.NoQrCode'))
       }
     } catch (e) {
       console.error(e)
-      Alert.alert('Fehler beim Verarbeiten des Bildes')
+      Alert.alert(t<string>('Scan.ImageLoadError'))
     }
   }
 
@@ -188,7 +189,7 @@ const Scan: React.FC<ScanProps> = ({ navigation, route }) => {
       {isFocused && mode !== 'camera' && (
         <View style={styles.container}>
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Button title="Bild aus Galerie wählen" onPress={pickImageAndScan} />
+            <Button title={t<string>('Scan.SelectImage')} onPress={pickImageAndScan} />
           </View>
         </View>
       )}

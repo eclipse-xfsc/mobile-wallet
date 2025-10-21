@@ -54,22 +54,21 @@ const RootStack: React.FC = () => {
     }
   }
 
-  // 🔗 Deep Linking Event Listener
   useEffect(() => {
     const handleDeepLinking = async (url: string) => {
       setDeepLinkUrl(url)
-
-      // 👇 Warte, bis Agent verfügbar ist
+     
       if (!agent) {
         console.warn('⚠️ Deep link received before agent init — delaying...')
         const interval = setInterval(async () => {
           if (agent) {
             clearInterval(interval)
-            await CheckLinkType(url, navigation, agent)
+            await CheckLinkType(url, navigation, agent,t)
           }
         }, 500)
       } else {
-        await CheckLinkType(url, navigation, agent)
+        console.log("Try to call ChecklinkType")
+        await CheckLinkType(url, navigation, agent,t)
       }
     }
 

@@ -27,58 +27,51 @@ type DisclosureProps = StackScreenProps<
 
 const PresentationDisclosure: React.FC<DisclosureProps> = ({ navigation, route }) => {
   const { t } = useTranslation()
-  const { presentationId, disclosureOptions } = route.params || {}
+  const { credentialId, disclosureOptions, onConfirm } = route.params || {}
 
-  // ✅ Verhindert Crash, falls disclosureOptions fehlt
   if (!disclosureOptions || typeof disclosureOptions !== 'object') {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centered}>
-          <Text style={styles.noData}>
-            Keine Disclosure-Daten verfügbar.
-          </Text>
-          <Button
-            title="OK"
-            onPress={() => navigation.goBack()}
-            buttonType={ButtonType.Primary}
-          />
+          <Text style={styles.noData}>Keine Disclosure-Daten verfügbar.</Text>
+          <Button title="OK" onPress={() => navigation.goBack()} buttonType={ButtonType.Primary} />
         </View>
       </SafeAreaView>
     )
   }
 
-  // 🔹 Flatten für Anzeige
-  const allDisclosures: { descriptorId: string; field: DisclosureField }[] = Object.entries(
-    disclosureOptions
-  ).flatMap(([descId, fields]) =>
-    (fields || []).map((field) => ({ descriptorId: descId, field }))
+  // Flatten für Anzeige
+  const allDisclosures = Object.entries(disclosureOptions).flatMap(([credId, fields]) =>
+    (fields || []).map((field) => ({ credentialId: credId, field }))
   )
 
   const [selected, setSelected] = useState<Record<string, boolean>>(
     Object.fromEntries(
       allDisclosures.map(
-        (d) => [`${d.descriptorId}:${d.field.path}`, d.field.disclose]
+        (d) => [`${d.credentialId}:${d.field.path}`, d.field.disclose]
       )
     )
   )
 
-  const toggle = (key: string) => {
+  const toggle = (key: string) =>
     setSelected((prev) => ({ ...prev, [key]: !prev[key] }))
-  }
 
   const handleConfirm = () => {
+    // Für jedes Credential seine Disclosure-Felder mit aktuellem Status zurückgeben
     const filteredOptions: Record<string, DisclosureField[]> = {}
-    for (const [descId, fields] of Object.entries(disclosureOptions)) {
-      filteredOptions[descId] = (fields || []).map((f) => ({
+    for (const [credId, fields] of Object.entries(disclosureOptions)) {
+      filteredOptions[credId] = (fields || []).map((f) => ({
         ...f,
-        disclose: selected[`${descId}:${f.path}`],
+        disclose: selected[`${credId}:${f.path}`],
       }))
     }
 
-    navigation.navigate(Screens.Presentation as never, {
-      presentationId,
-      selectedDisclosures: filteredOptions,
-    } as never)
+    // ✅ Rückgabe per Callback an Presentation
+    if (onConfirm) {
+      onConfirm(filteredOptions[credentialId] ?? [])
+    }
+
+    navigation.goBack()
   }
 
   return (
@@ -92,40 +85,44 @@ const PresentationDisclosure: React.FC<DisclosureProps> = ({ navigation, route }
             'Wählen Sie, welche Datenfelder Sie offenlegen möchten:'}
         </Text>
 
-        {allDisclosures.length === 0 && (
-          <Text style={styles.noData}>Keine selektiven Offenlegungen erforderlich.</Text>
+        {allDisclosures.length === 0 ? (
+          <Text style={styles.noData}>
+            Keine selektiven Offenlegungen erforderlich.
+          </Text>
+        ) : (
+          Object.entries(disclosureOptions).map(([credId, fields]) => (
+            <View key={credId} style={styles.section}>
+              <Text style={styles.sectionTitle}>{credId}</Text>
+              {(fields || []).map((field) => {
+                const key = `${credId}:${field.path}`
+                return (
+                  <View key={key} style={styles.item}>
+                    <View style={styles.itemText}>
+                      <Text style={styles.fieldPath}>{field.path}</Text>
+                      {field.purpose && (
+                        <Text style={styles.fieldPurpose}>{field.purpose}</Text>
+                      )}
+                      {field.value !== undefined && (
+                        <Text style={styles.fieldValue}>{String(field.value)}</Text>
+                      )}
+                    </View>
+
+                    <View style={styles.switchBox}>
+                      <Switch
+                        style={{ width: 51, height: 31 }} // ✅ iOS Touch Fix
+                        value={!!selected[key]}
+                        onValueChange={() => toggle(key)}
+                        trackColor={{ false: '#ccc', true: ColorPallet.brand.primary }}
+                        thumbColor={'#fff'}
+                      />
+                    </View>
+                  </View>
+                )
+              })}
+            </View>
+          ))
         )}
 
-        {Object.entries(disclosureOptions).map(([descId, fields]) => (
-          <View key={descId} style={styles.section}>
-            <Text style={styles.sectionTitle}>{descId}</Text>
-            {(fields || []).map((field) => {
-              const key = `${descId}:${field.path}`
-              return (
-                <View key={key} style={styles.item}>
-                  <View style={styles.itemText}>
-                    <Text style={styles.fieldPath}>{field.path}</Text>
-                    {field.purpose && (
-                      <Text style={styles.fieldPurpose}>{field.purpose}</Text>
-                    )}
-                    {field.value !== undefined && (
-                      <Text style={styles.fieldValue}>{String(field.value)}</Text>
-                    )}
-                  </View>
-                  <View style={styles.switchContainer}>
-                    <Switch
-                      value={!!selected[key]}
-                      onValueChange={() => toggle(key)}
-                      trackColor={{ false: '#ccc', true: ColorPallet.brand.primary }}
-                    />
-                  </View>
-                </View>
-              )
-            })}
-          </View>
-        ))}
-
-        {/* ✅ Nur "OK"-Button */}
         <View style={styles.buttonContainer}>
           <Button title="OK" onPress={handleConfirm} buttonType={ButtonType.Primary} />
         </View>
@@ -139,19 +136,15 @@ export default PresentationDisclosure
 // ---------- Styles ----------
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: ColorPallet.grayscale.white },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   scroll: { padding: 20 },
   title: { fontSize: 20, fontWeight: '700', marginBottom: 8 },
   subtitle: { fontSize: 15, color: '#555', marginBottom: 16 },
   section: {
     marginBottom: 20,
     backgroundColor: '#fafafa',
-    padding: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
     borderRadius: 8,
     borderColor: '#eee',
     borderWidth: 1,
@@ -163,9 +156,10 @@ const styles = StyleSheet.create({
   },
   item: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingVertical: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
     borderBottomWidth: 0.5,
     borderBottomColor: '#ddd',
   },
@@ -173,9 +167,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingRight: 12,
   },
-  switchContainer: {
-    justifyContent: 'center',
+  switchBox: {
+    width: 52,
+    height: 32,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   fieldPath: { fontSize: 14, fontWeight: '500', color: '#333' },
   fieldPurpose: { fontSize: 12, color: '#666', marginTop: 2 },

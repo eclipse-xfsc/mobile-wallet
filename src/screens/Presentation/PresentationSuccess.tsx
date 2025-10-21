@@ -24,16 +24,16 @@ const PresentationSuccess: React.FC<SuccessProps> = ({ navigation }) => {
           resizeMode="contain"
         />
         <Text style={styles.title}>
-          {t('OID4VP.PresentationSent') || 'Presentation gesendet!'}
+          {t('Presentation.PresentationSend') || 'Presentation gesendet!'}
         </Text>
         <Text style={styles.subtitle}>
-          {t('OID4VP.SuccessSubtitle') ||
+          {t('Presentation.SuccessSubtitle') ||
             'Deine Präsentation wurde erfolgreich übermittelt.'}
         </Text>
 
         <View style={styles.buttons}>
           <Button
-            title="Zurück zur Übersicht"
+            title= {t('Presentation.BacktoOverview')}
             onPress={() => navigation.navigate(Screens.PresentationList)}
             buttonType={ButtonType.Primary}
           />

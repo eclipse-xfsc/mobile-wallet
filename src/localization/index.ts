@@ -6,6 +6,7 @@ import { defaultLanguage, LocalStorageKeys } from '../constants';
 import de from './de';
 import en from './en';
 import fr from './fr';
+import es from './es';
 
 export type Translation = typeof en;
 
@@ -19,12 +20,16 @@ const resources = {
   de: {
     translation: de,
   },
+  es: {
+    translation: es,
+  },
 };
 
 export enum Locales {
   en = 'en',
   fr = 'fr',
   de = 'de',
+  es = 'es',
 }
 
 const currentLanguage = i18n.language;
